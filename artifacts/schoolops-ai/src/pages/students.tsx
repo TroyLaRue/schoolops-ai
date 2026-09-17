@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Sidebar, TopHeader } from '@/components/layout/shell';
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@/components/ui';
-import { Search, Filter, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Sidebar } from '@/components/layout/shell';
+import { Card, Badge, Button } from '@/components/ui';
+import { Search, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { SYNTHETIC_STUDENTS } from '@/data/school-data';
 
 export default function Students() {
@@ -19,10 +18,10 @@ export default function Students() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold tracking-tight">Student Directory</h1>
+      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <header className="min-h-16 border-b bg-card flex items-center justify-between px-4 py-2 sm:px-6 sticky top-0 z-20">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Student Directory</h1>
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Synthetic Data</Badge>
           </div>
         </header>
@@ -41,12 +40,12 @@ export default function Students() {
                 />
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex w-full items-center gap-2 sm:w-auto">
                 <span className="text-sm text-muted-foreground font-medium">Risk Filter:</span>
                 <select 
                   value={filterRisk}
                   onChange={(e) => setFilterRisk(e.target.value)}
-                  className="bg-background border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-11 flex-1 bg-background border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring sm:flex-none"
                 >
                   <option value="all">All Risks</option>
                   <option value="high">High Risk</option>
@@ -56,7 +55,48 @@ export default function Students() {
               </div>
             </div>
 
-            <Card>
+            <div className="space-y-3 md:hidden">
+              {filteredStudents.map((student) => (
+                <Card key={student.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold">{student.name}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">{student.id} · Grade {student.grade}</div>
+                    </div>
+                    <Badge variant={student.enrollmentStatus === 'active' ? 'success' : student.enrollmentStatus === 'pending' ? 'warning' : 'secondary'} className="shrink-0 capitalize">
+                      {student.enrollmentStatus}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 border-y py-3 text-sm">
+                    <div>
+                      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Attendance</div>
+                      <div className="flex items-center gap-2 capitalize">
+                        {student.attendanceRisk === 'high' && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                        {student.attendanceRisk === 'medium' && <AlertTriangle className="h-4 w-4 text-warning" />}
+                        {student.attendanceRisk === 'low' && <CheckCircle2 className="h-4 w-4 text-success" />}
+                        {student.attendanceRisk} · {student.attendanceRate}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</div>
+                      <div className="capitalize">{student.tuitionStatus.replace('_', ' ')}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-wrap gap-2">
+                      {student.missingDocuments.length > 0 ? (
+                        <Badge variant="destructive" className="gap-1"><FileText className="h-3 w-3" />{student.missingDocuments.length} missing</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Documents clear</span>
+                      )}
+                    </div>
+                    <Button variant="outline" size="sm" className="min-h-10 shrink-0">View Record</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <Card className="hidden md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b">

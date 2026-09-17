@@ -54,7 +54,7 @@ export function ChatWidget() {
   }, [messages, isTyping]);
 
   return (
-    <Card className="flex flex-col h-full shadow-sm border-muted flex-1 min-h-[400px] overflow-hidden">
+    <Card className="flex flex-col h-full shadow-sm border-muted flex-1 min-h-[520px] overflow-hidden">
       <CardHeader className="py-3 px-5 border-b bg-muted/20 shrink-0">
         <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -63,14 +63,14 @@ export function ChatWidget() {
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-muted/10">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-5 sm:space-y-6 bg-muted/10">
           {messages.map((msg) => (
             <div key={msg.id} className={cn("flex gap-3 sm:gap-4", msg.role === 'user' ? "flex-row-reverse" : "")}>
               <div className={cn("h-8 w-8 shrink-0 rounded-full flex items-center justify-center mt-0.5 shadow-sm border", 
                 msg.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border")}>
                 {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
-               <div className={cn("px-4 py-3 rounded-2xl text-[14px] leading-relaxed max-w-[88%] shadow-sm", 
+               <div className={cn("min-w-0 px-3 sm:px-4 py-3 rounded-2xl text-[14px] leading-relaxed max-w-[calc(100%-2.75rem)] sm:max-w-[88%] shadow-sm", 
                 msg.role === 'user' 
                   ? "bg-primary text-primary-foreground rounded-tr-sm border border-primary" 
                   : "bg-card text-foreground rounded-tl-sm border border-border")}>
@@ -139,7 +139,7 @@ export function ChatWidget() {
           )}
         </div>
         
-        <div className="p-4 md:p-5 bg-background border-t shrink-0">
+        <div className="p-3 sm:p-4 md:p-5 bg-background border-t shrink-0">
           {messages.length === 1 && (
             <div className="mb-4 pt-1">
               <div className="flex items-center gap-1.5 mb-3 px-1 text-muted-foreground">
@@ -151,7 +151,7 @@ export function ChatWidget() {
                   <button
                     key={i}
                     onClick={() => handleSend(suggestion)}
-                    className="text-[13px] bg-background hover:bg-accent text-foreground px-4 py-3 rounded-xl transition-all border shadow-sm text-left flex items-center justify-between group hover:shadow-md"
+                    className="min-h-11 text-[13px] bg-background hover:bg-accent text-foreground px-3 sm:px-4 py-3 rounded-xl transition-all border shadow-sm text-left flex items-center justify-between group hover:shadow-md"
                   >
                     <span className="font-medium text-foreground/90 pr-4">{suggestion}</span>
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 text-primary p-1.5 rounded-md shrink-0">

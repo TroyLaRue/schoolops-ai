@@ -92,12 +92,12 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                       <>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8 text-xs bg-background">
+                            <Button variant="outline" size="sm" className="min-h-10 text-xs bg-background">
                               <Eye className="h-3.5 w-3.5 mr-1.5" />
                               Review
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md">
+                          <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="flex items-center gap-2">
                                 {action.type === 'communication' ? <MessageSquare className="h-5 w-5 text-primary" /> : <ListTodo className="h-5 w-5 text-primary" />}
@@ -107,7 +107,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                             <div className="p-4 bg-muted/50 rounded-md mt-4 border font-mono text-sm text-foreground whitespace-pre-wrap">
                               {action.content}
                             </div>
-                            <div className="flex justify-end gap-2 mt-6">
+                            <div className="grid grid-cols-2 gap-2 mt-6 sm:flex sm:justify-end">
                               <DialogClose asChild>
                                 <Button variant="outline">Cancel</Button>
                               </DialogClose>
@@ -122,7 +122,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => onActionDismiss(issue.id, action.id)}
                           title="Dismiss"
                         >
@@ -131,7 +131,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                         <Button 
                           variant="default" 
                           size="sm"
-                          className="h-8 text-xs"
+                          className="min-h-10 flex-1 text-xs sm:flex-none"
                           onClick={() => onActionApprove(issue.id, action.id)}
                         >
                           <Check className="h-3.5 w-3.5 mr-1.5" />

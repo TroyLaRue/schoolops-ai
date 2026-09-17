@@ -1,0 +1,1 @@
+- [Gmail demo safety](gmail-demo-safety.md) — confirmed self-send delivery works; preserve synthetic-only content and explicit approval.

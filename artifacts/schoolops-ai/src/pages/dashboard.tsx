@@ -64,7 +64,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0">
+      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
         <TopHeader onRunAudit={handleRunAudit} isRunning={isRunning} />
         
         <main className="flex-1 p-4 md:p-8 overflow-y-auto relative">
@@ -86,17 +86,17 @@ export default function Dashboard() {
               
               {/* Left Column (Issues) */}
               <div className="space-y-6">
-                <Tabs defaultValue="all" className="w-full">
+                <Tabs defaultValue="all" className="w-full min-w-0">
                   <div className="flex items-center justify-between mb-4">
-                    <TabsList className="bg-muted/50 p-1">
-                      <TabsTrigger value="all" className="text-xs sm:text-sm">
-                        All Items <Badge variant="secondary" className="ml-2 bg-background">{issues.length}</Badge>
+                    <TabsList className="grid h-auto w-full grid-cols-3 bg-muted/50 p-1 sm:inline-flex sm:w-auto">
+                      <TabsTrigger value="all" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm">
+                        All <span className="hidden min-[360px]:inline">&nbsp;Items</span> <Badge variant="secondary" className="ml-1 sm:ml-2 bg-background">{issues.length}</Badge>
                       </TabsTrigger>
-                      <TabsTrigger value="critical" className="text-xs sm:text-sm data-[state=active]:text-destructive">
-                        Critical <Badge variant="destructive" className="ml-2">{criticalIssues.length}</Badge>
+                      <TabsTrigger value="critical" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm data-[state=active]:text-destructive">
+                        Critical <Badge variant="destructive" className="ml-1 sm:ml-2">{criticalIssues.length}</Badge>
                       </TabsTrigger>
-                      <TabsTrigger value="attention" className="text-xs sm:text-sm data-[state=active]:text-warning">
-                        Attention <Badge variant="warning" className="ml-2">{attentionIssues.length}</Badge>
+                      <TabsTrigger value="attention" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm data-[state=active]:text-warning">
+                        Attention <Badge variant="warning" className="ml-1 sm:ml-2">{attentionIssues.length}</Badge>
                       </TabsTrigger>
                     </TabsList>
                   </div>

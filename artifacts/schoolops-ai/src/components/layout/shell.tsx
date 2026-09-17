@@ -14,6 +14,7 @@ export function Sidebar() {
   ];
 
   return (
+    <>
     <div className="w-64 border-r bg-card flex flex-col h-screen fixed left-0 top-0 hidden md:flex">
       <div className="h-16 flex items-center px-6 border-b border-border/50">
         <Link href="/" className="flex items-center gap-2 outline-none">
@@ -60,15 +61,37 @@ export function Sidebar() {
         </div>
       </div>
     </div>
+    <nav
+      aria-label="Main navigation"
+      className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-card/95 px-1 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md md:hidden"
+    >
+      {navItems.map((item) => {
+        const isActive = location === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium outline-none transition-colors',
+              isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground active:bg-accent',
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+    </>
   );
 }
 
 export function TopHeader({ onRunAudit, isRunning }: { onRunAudit: () => void, isRunning: boolean }) {
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-20">
+    <header className="min-h-16 border-b bg-card flex items-center justify-between gap-3 px-4 py-2 sm:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-4">
         {/* Mobile menu button would go here */}
-        <h1 className="text-xl font-semibold tracking-tight">Command Center</h1>
+        <h1 className="text-lg sm:text-xl font-semibold tracking-tight leading-tight">Command Center</h1>
       </div>
       
       <div className="flex items-center gap-4">
@@ -81,7 +104,7 @@ export function TopHeader({ onRunAudit, isRunning }: { onRunAudit: () => void, i
           onClick={onRunAudit}
           disabled={isRunning}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all shadow-sm",
+            "flex min-h-11 items-center gap-2 px-3 sm:px-4 py-2 rounded-md font-medium text-sm transition-all shadow-sm",
             isRunning 
               ? "bg-muted text-muted-foreground cursor-not-allowed" 
               : "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow"
@@ -100,7 +123,8 @@ export function TopHeader({ onRunAudit, isRunning }: { onRunAudit: () => void, i
                 <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
                 <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
               </svg>
-              Run Morning Audit
+              <span className="sm:hidden">Run Audit</span>
+              <span className="hidden sm:inline">Run Morning Audit</span>
             </>
           )}
         </button>

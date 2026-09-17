@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/layout/shell';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, Button, Badge } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@/components/ui';
 import { Building, ShieldCheck, Link2, BellRing, Database, AlertCircle, Mail, ExternalLink, LockKeyhole, CheckCircle2, Clock3 } from 'lucide-react';
 import { GMAIL_STATE_EVENT, getGmailActionLog, getGmailStatus, setGmailStatus, type GmailActionLogEntry, type GmailConnectionStatus } from '@/lib/gmail-demo';
 import { useGetGmailStatus } from '@workspace/api-client-react';
@@ -40,20 +40,20 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card flex items-center px-6 sticky top-0 z-20">
-          <h1 className="text-xl font-semibold tracking-tight">Settings & Configuration</h1>
+      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <header className="min-h-16 border-b bg-card flex items-center px-4 py-2 sm:px-6 sticky top-0 z-20">
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Settings & Configuration</h1>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <div className="max-w-4xl mx-auto space-y-8">
             
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
               <div>
                 <h2 className="text-lg font-semibold">School Profile</h2>
                 <p className="text-sm text-muted-foreground">Manage your institution's core operational parameters.</p>
               </div>
-              <Button onClick={handleSave} disabled={saveStatus === 'saving'}>
+              <Button onClick={handleSave} disabled={saveStatus === 'saving'} className="min-h-11 w-full min-[380px]:w-auto">
                 {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Changes'}
               </Button>
             </div>
@@ -143,7 +143,7 @@ export default function Settings() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium">School Name</label>
                         <input type="text" defaultValue="Oakridge Middle School" className="w-full px-3 py-2 border rounded-md text-sm bg-background" />
@@ -155,10 +155,10 @@ export default function Settings() {
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium">Operating Hours</label>
-                      <div className="flex items-center gap-2">
-                        <input type="time" defaultValue="07:30" className="px-3 py-2 border rounded-md text-sm bg-background" />
+                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                         <input type="time" defaultValue="07:30" className="min-w-0 w-full px-2 sm:px-3 py-2 border rounded-md text-sm bg-background" />
                         <span className="text-muted-foreground">to</span>
-                        <input type="time" defaultValue="15:30" className="px-3 py-2 border rounded-md text-sm bg-background" />
+                         <input type="time" defaultValue="15:30" className="min-w-0 w-full px-2 sm:px-3 py-2 border rounded-md text-sm bg-background" />
                       </div>
                     </div>
                   </CardContent>
@@ -193,17 +193,17 @@ export default function Settings() {
 
                     <div className="space-y-3">
                       <h4 className="text-sm font-medium text-foreground">Alert Thresholds</h4>
-                      <div className="flex items-center justify-between py-2 border-b">
+                       <div className="flex flex-col gap-2 py-3 border-b sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm">Attendance Drop Anomaly</span>
-                        <select defaultValue="10% Variance" className="border rounded-md text-sm p-1.5 bg-background">
+                         <select defaultValue="10% Variance" className="min-h-11 w-full border rounded-md text-sm p-2 bg-background sm:w-auto">
                           <option>5% Variance</option>
                           <option>10% Variance</option>
                           <option>15% Variance</option>
                         </select>
                       </div>
-                      <div className="flex items-center justify-between py-2 border-b">
+                       <div className="flex flex-col gap-2 py-3 border-b sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm">Missing Document Deadline</span>
-                        <select defaultValue="48 Hours Before" className="border rounded-md text-sm p-1.5 bg-background">
+                         <select defaultValue="48 Hours Before" className="min-h-11 w-full border rounded-md text-sm p-2 bg-background sm:w-auto">
                           <option>24 Hours Before</option>
                           <option>48 Hours Before</option>
                           <option>1 Week Before</option>

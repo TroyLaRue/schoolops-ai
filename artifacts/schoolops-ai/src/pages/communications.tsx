@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Sidebar, TopHeader } from '@/components/layout/shell';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, Badge, Button } from '@/components/ui';
+import { Sidebar } from '@/components/layout/shell';
+import { Card, CardContent, CardHeader, CardFooter, Badge, Button } from '@/components/ui';
 import { Mail, CheckCircle2, Clock, XCircle, Smartphone, Info, Plus, LockKeyhole } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addGmailActionLog } from '@/lib/gmail-demo';
@@ -111,10 +111,10 @@ export default function Communications() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold tracking-tight">Communications Review</h1>
+      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <header className="min-h-16 border-b bg-card flex items-center justify-between gap-3 px-4 py-2 sm:px-6 sticky top-0 z-20">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-xl font-semibold tracking-tight leading-tight">Communications Review</h1>
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Synthetic Data</Badge>
           </div>
         </header>
@@ -140,11 +140,11 @@ export default function Communications() {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Pending Review</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
                 <Badge variant="outline" className="text-muted-foreground">
                   {comms.filter(c => c.status === 'draft').length} Items
                 </Badge>
-                <Button onClick={handleCreateDraft} className="gap-2">
+                <Button onClick={handleCreateDraft} className="min-h-11 gap-2">
                   <Plus className="h-4 w-4" /> Create Demo Draft
                 </Button>
               </div>
@@ -158,17 +158,17 @@ export default function Communications() {
                   comm.status === 'rejected' && "border-destructive/50 bg-destructive/5 opacity-75"
                 )}>
                   <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           {comm.channel === 'email' ? <Mail className="h-4 w-4 text-muted-foreground" /> : <Smartphone className="h-4 w-4 text-muted-foreground" />}
                           <span className="font-semibold">{comm.recipient}</span>
-                          <span className="text-xs text-muted-foreground ml-2">{comm.timestamp}</span>
+                          <span className="text-xs text-muted-foreground sm:ml-2">{comm.timestamp}</span>
                         </div>
                         {comm.subject && (
                           <div className="text-sm font-medium">Subject: {comm.subject}</div>
                         )}
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <div className="text-xs text-muted-foreground flex items-start gap-1">
                           <span className="font-medium">Trigger:</span> {comm.reason}
                         </div>
                       </div>
@@ -194,17 +194,17 @@ export default function Communications() {
                   </CardHeader>
                   
                   <CardContent>
-                    <div className="bg-background border rounded-md p-4 text-sm whitespace-pre-wrap font-mono text-muted-foreground">
+                    <div className="break-words bg-background border rounded-md p-3 sm:p-4 text-xs sm:text-sm whitespace-pre-wrap font-mono text-muted-foreground">
                       {comm.message}
                     </div>
                   </CardContent>
                   
                   {comm.status === 'draft' && (
-                    <CardFooter className="bg-muted/30 border-t pt-4 flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => handleReject(comm.id)}>
+                    <CardFooter className="grid grid-cols-2 gap-2 border-t bg-muted/30 pt-4 sm:flex sm:justify-end">
+                      <Button variant="outline" onClick={() => handleReject(comm.id)} className="min-h-11">
                         Reject
                       </Button>
-                      <Button variant="default" onClick={() => handleApprove(comm.id)} className="gap-2">
+                      <Button variant="default" onClick={() => handleApprove(comm.id)} className="min-h-11 gap-2">
                         <CheckCircle2 className="h-4 w-4" /> Approve Draft
                       </Button>
                     </CardFooter>
@@ -215,7 +215,7 @@ export default function Communications() {
                         <LockKeyhole className="h-3.5 w-3.5" />
                         {sendingEnabled ? 'Delivery is restricted to your connected Gmail test account.' : 'Connect a valid Gmail demo account in Settings to enable sending.'}
                       </div>
-                      <Button onClick={() => handleSend(comm.id)} disabled={!sendingEnabled || sendGmail.isPending} className="gap-2">
+                      <Button onClick={() => handleSend(comm.id)} disabled={!sendingEnabled || sendGmail.isPending} className="min-h-11 w-full gap-2 sm:w-auto">
                         <Mail className="h-4 w-4" /> {sendGmail.isPending ? 'Sending...' : 'Approve & Send'}
                       </Button>
                     </CardFooter>
