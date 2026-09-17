@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Sidebar, TopHeader } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, Badge, Button } from '@/components/ui';
-import { Mail, CheckCircle2, Clock, XCircle, Smartphone, Info } from 'lucide-react';
+import { Mail, CheckCircle2, Clock, XCircle, Smartphone, Info, Plus, LockKeyhole } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { addGmailActionLog, canSendWithGmail } from '@/lib/gmail-demo';
 
-type CommStatus = 'draft' | 'approved' | 'rejected';
+type CommStatus = 'draft' | 'approved' | 'sent' | 'rejected';
 
 interface Communication {
   id: string;
@@ -51,13 +52,38 @@ const INITIAL_COMMS: Communication[] = [
 
 export default function Communications() {
   const [comms, setComms] = useState<Communication[]>(INITIAL_COMMS);
+  const [sendingEnabled] = useState(canSendWithGmail);
 
   const handleApprove = (id: string) => {
+    const communication = comms.find((item) => item.id === id);
     setComms(prev => prev.map(c => c.id === id ? { ...c, status: 'approved' } : c));
+    if (communication) addGmailActionLog('draft_approved', `Approved synthetic draft ${communication.id}`);
   };
 
   const handleReject = (id: string) => {
     setComms(prev => prev.map(c => c.id === id ? { ...c, status: 'rejected' } : c));
+  };
+
+  const handleCreateDraft = () => {
+    const id = `COM-${Date.now().toString().slice(-4)}`;
+    const draft: Communication = {
+      id,
+      recipient: 'Davis Family (Avery Davis, 7th) · demo-parent@example.test',
+      channel: 'email',
+      subject: 'Demo reminder: Tdap booster record',
+      message: 'Dear Davis Family,\\n\\nThis is a synthetic SchoolOps AI demonstration. The demo record for Avery shows a missing Tdap booster document. Please review the test portal when convenient.\\n\\nNo real student or family data was used in this message.',
+      reason: 'Synthetic missing-document flag.',
+      status: 'draft',
+      timestamp: 'Just now',
+    };
+    setComms((current) => [draft, ...current]);
+    addGmailActionLog('draft_created', `Created synthetic Gmail draft ${id}`);
+  };
+
+  const handleSend = (id: string) => {
+    if (!sendingEnabled) return;
+    setComms((current) => current.map((item) => item.id === id ? { ...item, status: 'sent' } : item));
+    addGmailActionLog('email_sent', `Sent approved synthetic draft ${id} through Gmail`);
   };
 
   return (
@@ -79,16 +105,21 @@ export default function Communications() {
               <div>
                 <h3 className="font-medium text-primary">Human-in-the-Loop Required</h3>
                 <p className="text-sm text-primary/80 mt-1">
-                  SchoolOps AI drafts these communications based on operational triggers. Approving a message marks it as approved for simulation purposes only. No real emails or SMS messages will be sent.
+                  SchoolOps AI uses synthetic records to prepare drafts. Review and approval are required before sending, and Gmail sending remains locked until valid demo-account credentials are configured.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Pending Review</h2>
-              <Badge variant="outline" className="text-muted-foreground">
-                {comms.filter(c => c.status === 'draft').length} Items
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-muted-foreground">
+                  {comms.filter(c => c.status === 'draft').length} Items
+                </Badge>
+                <Button onClick={handleCreateDraft} className="gap-2">
+                  <Plus className="h-4 w-4" /> Create Demo Draft
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -122,6 +153,10 @@ export default function Communications() {
                         <Badge variant="success" className="flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" /> Approved
                         </Badge>
+                      ) : comm.status === 'sent' ? (
+                        <Badge variant="success" className="flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Sent
+                        </Badge>
                       ) : (
                         <Badge variant="destructive" className="flex items-center gap-1">
                           <XCircle className="h-3 w-3" /> Rejected
@@ -142,7 +177,18 @@ export default function Communications() {
                         Reject
                       </Button>
                       <Button variant="default" onClick={() => handleApprove(comm.id)} className="gap-2">
-                        <CheckCircle2 className="h-4 w-4" /> Approve for Simulation
+                        <CheckCircle2 className="h-4 w-4" /> Approve Draft
+                      </Button>
+                    </CardFooter>
+                  )}
+                  {comm.status === 'approved' && comm.channel === 'email' && (
+                    <CardFooter className="flex-col items-stretch gap-2 border-t bg-muted/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <LockKeyhole className="h-3.5 w-3.5" />
+                        {sendingEnabled ? 'Valid Gmail credentials detected.' : 'Connect a valid Gmail demo account in Settings to enable sending.'}
+                      </div>
+                      <Button onClick={() => handleSend(comm.id)} disabled={!sendingEnabled} className="gap-2">
+                        <Mail className="h-4 w-4" /> Approve &amp; Send
                       </Button>
                     </CardFooter>
                   )}

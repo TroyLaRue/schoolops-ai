@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, Button, Badge } from '@/components/ui';
-import { Building, ShieldCheck, Link2, BellRing, Save, Database, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Building, ShieldCheck, Link2, BellRing, Database, AlertCircle, Mail, ExternalLink, LockKeyhole, CheckCircle2, Clock3 } from 'lucide-react';
+import { GMAIL_STATE_EVENT, getGmailActionLog, getGmailStatus, setGmailStatus, type GmailActionLogEntry, type GmailConnectionStatus } from '@/lib/gmail-demo';
 
 export default function Settings() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [gmailStatus, setGmailStatusState] = useState<GmailConnectionStatus>(getGmailStatus);
+  const [gmailLog, setGmailLog] = useState<GmailActionLogEntry[]>(getGmailActionLog);
+
+  React.useEffect(() => {
+    const syncGmailState = () => {
+      setGmailStatusState(getGmailStatus());
+      setGmailLog(getGmailActionLog());
+    };
+    window.addEventListener(GMAIL_STATE_EVENT, syncGmailState);
+    return () => window.removeEventListener(GMAIL_STATE_EVENT, syncGmailState);
+  }, []);
 
   const handleSave = () => {
     setSaveStatus('saving');
@@ -13,6 +24,10 @@ export default function Settings() {
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }, 800);
+  };
+
+  const handleConnectGmail = () => {
+    setGmailStatus('oauth_pending');
   };
 
   return (
@@ -35,6 +50,77 @@ export default function Settings() {
                 {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Changes'}
               </Button>
             </div>
+
+            <Card className="overflow-hidden border-primary/20">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-card shadow-sm">
+                      <Mail className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CardTitle className="text-base">Gmail Integration</CardTitle>
+                        <Badge variant="secondary" className="border border-primary/15 bg-primary/10 text-primary">Demo / Test Account</Badge>
+                      </div>
+                      <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+                        Prepare and review synthetic communications through a secure, human-approved workflow. No real school records are used.
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={gmailStatus === 'connected' ? 'success' : 'outline'} className="w-fit gap-1.5 py-1">
+                    {gmailStatus === 'connected' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
+                    {gmailStatus === 'connected' ? 'Connected' : gmailStatus === 'oauth_pending' ? 'OAuth setup pending' : 'Not connected'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-6 pt-6 lg:grid-cols-[1.15fr_.85fr]">
+                <div className="space-y-4">
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <LockKeyhole className="h-4 w-4 text-primary" />
+                      Safe connection flow
+                    </div>
+                    <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
+                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">01</span><span>Authorize a dedicated Gmail demo account through Google OAuth.</span></li>
+                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">02</span><span>SchoolOps creates a draft with synthetic recipient, subject, and body fields.</span></li>
+                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">03</span><span>A human reviews and approves the draft before any send request.</span></li>
+                    </ol>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button onClick={handleConnectGmail} className="gap-2" disabled={gmailStatus === 'oauth_pending'}>
+                      <ExternalLink className="h-4 w-4" />
+                      {gmailStatus === 'oauth_pending' ? 'Connection requested' : 'Connect Gmail'}
+                    </Button>
+                    <span className="text-xs text-muted-foreground">Sending stays disabled until valid credentials are confirmed.</span>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-card">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div className="text-sm font-semibold">Gmail action log</div>
+                    <Badge variant="outline">{gmailLog.length} events</Badge>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto p-4">
+                    {gmailLog.length ? (
+                      <div className="space-y-3">
+                        {gmailLog.slice(0, 6).map((entry) => (
+                          <div key={entry.id} className="flex gap-3 text-xs">
+                            <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium text-foreground">{entry.message}</div>
+                              <div className="mt-0.5 text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-7 text-center text-xs text-muted-foreground">Draft, approval, and send events will appear here.</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
