@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
-import { MessageSquare, Send, Sparkles, User, Bot, ArrowRight } from 'lucide-react';
-import { MOCK_QA_RESPONSES } from '@/data/mock';
+import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check } from 'lucide-react';
+import { AgentAnswer, answerSchoolOpsQuestion } from '@/lib/schoolops-agent';
 import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
   role: 'user' | 'agent';
-  content: string;
+  content?: string;
+  answer?: AgentAnswer;
 }
 
 export function ChatWidget() {
@@ -16,12 +17,14 @@ export function ChatWidget() {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [stagedActions, setStagedActions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const suggestions = [
     "How many 7th graders are missing documents?",
     "Which inquiries have not received follow-up?",
-    "What is the overall attendance rate today?"
+    "What is the overall attendance rate today?",
+    "What should I prioritize this morning?"
   ];
 
   const handleSend = (text: string) => {
@@ -34,8 +37,11 @@ export function ChatWidget() {
 
     // Simulate agent response
     setTimeout(() => {
-      const responseText = MOCK_QA_RESPONSES[text] || "I don't have a pre-configured answer for that specific question in this demo, but I am analyzing the simulated data sources to find the answer.";
-      const agentMsg: Message = { id: (Date.now() + 1).toString(), role: 'agent', content: responseText };
+      const agentMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'agent',
+        answer: answerSchoolOpsQuestion(text),
+      };
       setMessages(prev => [...prev, agentMsg]);
       setIsTyping(false);
     }, 1200);
@@ -64,11 +70,57 @@ export function ChatWidget() {
                 msg.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border")}>
                 {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
-              <div className={cn("px-4 py-3 rounded-2xl text-[14px] leading-relaxed max-w-[85%] shadow-sm", 
+               <div className={cn("px-4 py-3 rounded-2xl text-[14px] leading-relaxed max-w-[88%] shadow-sm", 
                 msg.role === 'user' 
                   ? "bg-primary text-primary-foreground rounded-tr-sm border border-primary" 
                   : "bg-card text-foreground rounded-tl-sm border border-border")}>
-                {msg.content}
+                 {msg.content}
+                 {msg.answer && (
+                   <div className="space-y-4">
+                     <div>
+                       <div className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">Facts from synthetic data</div>
+                       <p>{msg.answer.facts}</p>
+                     </div>
+                     <div className="border-t pt-3">
+                       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                         <Database className="h-3 w-3" /> Supporting evidence
+                       </div>
+                       <ul className="space-y-1.5 text-xs text-muted-foreground">
+                         {msg.answer.evidence.slice(0, 6).map((item) => (
+                           <li key={item} className="flex gap-2">
+                             <span className="text-primary">•</span><span>{item}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     </div>
+                     {msg.answer.recommendation && (
+                       <div className="border-t pt-3">
+                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                           <Lightbulb className="h-3 w-3" /> Recommendation
+                         </div>
+                         <p className="text-xs text-muted-foreground">{msg.answer.recommendation}</p>
+                       </div>
+                     )}
+                     {msg.answer.suggestedAction && (
+                       <button
+                         onClick={() => setStagedActions((actions) =>
+                           actions.includes(msg.answer!.suggestedAction!)
+                             ? actions
+                             : [...actions, msg.answer!.suggestedAction!],
+                         )}
+                         className="w-full border border-primary/25 bg-primary/5 hover:bg-primary/10 rounded-lg p-2.5 text-left transition-colors"
+                       >
+                         <div className="flex items-start gap-2">
+                           {stagedActions.includes(msg.answer.suggestedAction) ? <Check className="h-4 w-4 text-success mt-0.5" /> : <ShieldCheck className="h-4 w-4 text-primary mt-0.5" />}
+                           <div>
+                             <div className="text-xs font-semibold">{stagedActions.includes(msg.answer.suggestedAction) ? 'Staged for human review' : msg.answer.suggestedAction}</div>
+                             <div className="text-[10px] text-muted-foreground mt-0.5">No external action occurs without approval.</div>
+                           </div>
+                         </div>
+                       </button>
+                     )}
+                   </div>
+                 )}
               </div>
             </div>
           ))}

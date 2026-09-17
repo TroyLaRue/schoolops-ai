@@ -3,26 +3,7 @@ import { Sidebar, TopHeader } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@/components/ui';
 import { Search, Filter, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Student {
-  id: string;
-  name: string;
-  grade: string;
-  attendanceRisk: 'high' | 'medium' | 'low';
-  missingDocuments: string[];
-  enrollmentStatus: 'active' | 'pending' | 'withdrawn';
-  tuitionFlag: boolean;
-}
-
-const SYNTHETIC_STUDENTS: Student[] = [
-  { id: 'STU-1001', name: 'Alexander Chen', grade: '9th', attendanceRisk: 'low', missingDocuments: [], enrollmentStatus: 'active', tuitionFlag: false },
-  { id: 'STU-1002', name: 'Maya Johnson', grade: '11th', attendanceRisk: 'high', missingDocuments: ['Tdap Booster'], enrollmentStatus: 'active', tuitionFlag: true },
-  { id: 'STU-1003', name: 'Elijah Smith', grade: '10th', attendanceRisk: 'medium', missingDocuments: [], enrollmentStatus: 'active', tuitionFlag: false },
-  { id: 'STU-1004', name: 'Sophia Martinez', grade: '9th', attendanceRisk: 'low', missingDocuments: ['Physical Form'], enrollmentStatus: 'pending', tuitionFlag: false },
-  { id: 'STU-1005', name: 'Liam Garcia', grade: '12th', attendanceRisk: 'low', missingDocuments: [], enrollmentStatus: 'active', tuitionFlag: false },
-  { id: 'STU-1006', name: 'Olivia Williams', grade: '8th', attendanceRisk: 'medium', missingDocuments: ['Emergency Contact', 'Tdap Booster'], enrollmentStatus: 'active', tuitionFlag: true },
-  { id: 'STU-1007', name: 'Noah Brown', grade: '11th', attendanceRisk: 'high', missingDocuments: [], enrollmentStatus: 'active', tuitionFlag: false },
-];
+import { SYNTHETIC_STUDENTS } from '@/data/school-data';
 
 export default function Students() {
   const [search, setSearch] = useState('');
@@ -93,7 +74,7 @@ export default function Students() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-medium text-foreground">{student.name}</span>
-                            <span className="text-xs text-muted-foreground">{student.id} &bull; {student.grade}</span>
+                            <span className="text-xs text-muted-foreground">{student.id} &bull; Grade {student.grade}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -120,10 +101,10 @@ export default function Students() {
                                 {student.missingDocuments.length} Missing Doc{student.missingDocuments.length > 1 ? 's' : ''}
                               </Badge>
                             )}
-                            {student.tuitionFlag && (
-                              <Badge variant="warning">Past Due</Badge>
+                            {student.tuitionStatus !== 'current' && (
+                              <Badge variant="warning">{student.tuitionStatus === 'past_due' ? 'Past Due' : 'Payment Plan'}</Badge>
                             )}
-                            {student.missingDocuments.length === 0 && !student.tuitionFlag && (
+                            {student.missingDocuments.length === 0 && student.tuitionStatus === 'current' && (
                               <span className="text-muted-foreground text-xs">Clear</span>
                             )}
                           </div>
