@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
-import { MessageSquare, Send, Sparkles, User, Bot } from 'lucide-react';
+import { MessageSquare, Send, Sparkles, User, Bot, ArrowRight } from 'lucide-react';
 import { MOCK_QA_RESPONSES } from '@/data/mock';
 import { cn } from '@/lib/utils';
 
@@ -48,66 +48,88 @@ export function ChatWidget() {
   }, [messages, isTyping]);
 
   return (
-    <Card className="flex flex-col h-[400px] shadow-sm border-muted">
-      <CardHeader className="py-3 px-4 border-b bg-muted/20">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/80">
+    <Card className="flex flex-col h-full shadow-sm border-muted flex-1 min-h-[400px] overflow-hidden">
+      <CardHeader className="py-3 px-5 border-b bg-muted/20 shrink-0">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
           <Sparkles className="h-4 w-4 text-primary" />
           Ask SchoolOps
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-muted/10">
           {messages.map((msg) => (
-            <div key={msg.id} className={cn("flex gap-3", msg.role === 'user' ? "flex-row-reverse" : "")}>
-              <div className={cn("h-8 w-8 shrink-0 rounded-full flex items-center justify-center", 
-                msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground")}>
-                {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+            <div key={msg.id} className={cn("flex gap-3 sm:gap-4", msg.role === 'user' ? "flex-row-reverse" : "")}>
+              <div className={cn("h-8 w-8 shrink-0 rounded-full flex items-center justify-center mt-0.5 shadow-sm border", 
+                msg.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border")}>
+                {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
-              <div className={cn("px-3 py-2 rounded-lg text-sm max-w-[85%]", 
-                msg.role === 'user' ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted text-foreground rounded-tl-sm")}>
+              <div className={cn("px-4 py-3 rounded-2xl text-[14px] leading-relaxed max-w-[85%] shadow-sm", 
+                msg.role === 'user' 
+                  ? "bg-primary text-primary-foreground rounded-tr-sm border border-primary" 
+                  : "bg-card text-foreground rounded-tl-sm border border-border")}>
                 {msg.content}
               </div>
             </div>
           ))}
+          
           {isTyping && (
-            <div className="flex gap-3">
-              <div className="h-8 w-8 shrink-0 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-                <Bot className="h-4 w-4" />
+            <div className="flex gap-3 sm:gap-4">
+              <div className="h-8 w-8 shrink-0 rounded-full bg-card border border-border text-foreground flex items-center justify-center mt-0.5 shadow-sm">
+                <Bot className="h-4 w-4 text-primary" />
               </div>
-              <div className="px-4 py-3 rounded-lg bg-muted rounded-tl-sm flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="px-5 py-4 rounded-2xl bg-card border border-border shadow-sm rounded-tl-sm flex items-center gap-1.5 h-[46px]">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}
         </div>
         
-        <div className="p-3 bg-background border-t">
+        <div className="p-4 md:p-5 bg-background border-t shrink-0">
           {messages.length === 1 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {suggestions.map((suggestion, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(suggestion)}
-                  className="text-[11px] bg-accent/50 hover:bg-accent text-foreground/80 px-2.5 py-1 rounded-full transition-colors border text-left"
-                >
-                  {suggestion}
-                </button>
-              ))}
+            <div className="mb-4 pt-1">
+              <div className="flex items-center gap-1.5 mb-3 px-1 text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-primary/80" />
+                <p className="text-[11px] font-semibold uppercase tracking-wider">Suggested Queries</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                {suggestions.map((suggestion, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(suggestion)}
+                    className="text-[13px] bg-background hover:bg-accent text-foreground px-4 py-3 rounded-xl transition-all border shadow-sm text-left flex items-center justify-between group hover:shadow-md"
+                  >
+                    <span className="font-medium text-foreground/90 pr-4">{suggestion}</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-primary/10 text-primary p-1.5 rounded-md shrink-0">
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-          <div className="flex items-center gap-2">
+          
+          <div className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
               placeholder="Ask about today's operations..."
-              className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground"
+              className="w-full h-12 rounded-xl border border-input bg-background pl-4 pr-12 text-[14px] shadow-sm transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary placeholder:text-muted-foreground"
             />
-            <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => handleSend(input)} disabled={!input.trim()}>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className={cn(
+                "absolute right-1.5 h-9 w-9 shrink-0 transition-colors rounded-lg",
+                input.trim() ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:bg-accent"
+              )} 
+              onClick={() => handleSend(input)} 
+              disabled={!input.trim()}
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>

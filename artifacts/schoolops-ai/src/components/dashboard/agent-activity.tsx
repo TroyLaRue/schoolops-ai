@@ -60,10 +60,10 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
   }, [logs]);
 
   return (
-    <Card className="flex flex-col h-[350px] shadow-sm border-muted">
-      <CardHeader className="py-3 px-4 border-b bg-muted/20">
+    <Card className="flex flex-col h-[280px] shadow-sm border-muted shrink-0 overflow-hidden">
+      <CardHeader className="py-3 px-4 border-b bg-muted/20 shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/80">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
             <Terminal className="h-4 w-4 text-primary" />
             Agent Activity Log
           </CardTitle>
@@ -80,7 +80,7 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
       </CardHeader>
       <CardContent 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 bg-black/95 text-green-400 font-mono text-[13px] leading-relaxed rounded-b-lg scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a] text-green-400 font-mono text-[13px] leading-relaxed scroll-smooth"
       >
         <div className="space-y-1.5">
           {safeLogs.map((log, i) => (
