@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Sidebar, TopHeader } from '@/components/layout/shell';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { ChatWidget } from '@/components/dashboard/chat-widget';
@@ -20,14 +20,14 @@ export default function Dashboard() {
     // For this demo, we'll just dim them or show an empty state until it finishes
   };
 
-  const handleAuditComplete = () => {
+  const handleAuditComplete = useCallback(() => {
     setIsRunning(false);
     // Reset any dismissed actions to show the full board again for demo purposes
     setIssues(MOCK_ISSUES.map(issue => ({
       ...issue,
       actions: issue.actions.map(a => ({ ...a, status: 'pending' as const }))
     })));
-  };
+  }, []);
 
   const handleActionApprove = (issueId: string, actionId: string) => {
     setIssues(prev => prev.map(issue => {

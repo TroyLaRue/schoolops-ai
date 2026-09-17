@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { CardContent } from '@/components/ui/card';
 import { Terminal, RefreshCw, CheckCircle2 } from 'lucide-react';
@@ -14,6 +14,10 @@ interface AgentActivityProps {
 export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActivityProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const safeLogs = useMemo(
+    () => logs.filter((log): log is string => typeof log === 'string'),
+    [logs],
+  );
   
   useEffect(() => {
     if (!isRunning && hasRunBefore) {
@@ -79,7 +83,7 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
         className="flex-1 overflow-y-auto p-4 bg-black/95 text-green-400 font-mono text-[13px] leading-relaxed rounded-b-lg scroll-smooth"
       >
         <div className="space-y-1.5">
-          {logs.map((log, i) => (
+          {safeLogs.map((log, i) => (
             <div 
               key={i} 
               className={cn(
@@ -87,7 +91,7 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
                 log.includes('Critical') || log.includes('anomaly') ? 'text-yellow-300' : '',
                 log.includes('Complete') ? 'text-white font-semibold' : ''
               )}
-              style={{ animationDelay: `${i === logs.length - 1 && isRunning ? '0ms' : '0ms'}` }}
+              style={{ animationDelay: `${i === safeLogs.length - 1 && isRunning ? '0ms' : '0ms'}` }}
             >
               <span className="text-white/40 mr-3">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}]</span>
               {log}
