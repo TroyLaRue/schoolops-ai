@@ -3,7 +3,8 @@ import { Sidebar, TopHeader } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, Badge, Button } from '@/components/ui';
 import { Mail, CheckCircle2, Clock, XCircle, Smartphone, Info, Plus, LockKeyhole } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { addGmailActionLog, canSendWithGmail } from '@/lib/gmail-demo';
+import { addGmailActionLog } from '@/lib/gmail-demo';
+import { useGetGmailStatus, useSendGmailDemoEmail } from '@workspace/api-client-react';
 
 type CommStatus = 'draft' | 'approved' | 'sent' | 'rejected';
 
@@ -52,7 +53,10 @@ const INITIAL_COMMS: Communication[] = [
 
 export default function Communications() {
   const [comms, setComms] = useState<Communication[]>(INITIAL_COMMS);
-  const [sendingEnabled] = useState(canSendWithGmail);
+  const [sendError, setSendError] = useState('');
+  const gmailConnection = useGetGmailStatus();
+  const sendGmail = useSendGmailDemoEmail();
+  const sendingEnabled = gmailConnection.data?.canSend === true;
 
   const handleApprove = (id: string) => {
     const communication = comms.find((item) => item.id === id);
@@ -68,7 +72,7 @@ export default function Communications() {
     const id = `COM-${Date.now().toString().slice(-4)}`;
     const draft: Communication = {
       id,
-      recipient: 'Davis Family (Avery Davis, 7th) · demo-parent@example.test',
+      recipient: 'Connected Gmail test account (self-send)',
       channel: 'email',
       subject: 'Demo reminder: Tdap booster record',
       message: 'Dear Davis Family,\\n\\nThis is a synthetic SchoolOps AI demonstration. The demo record for Avery shows a missing Tdap booster document. Please review the test portal when convenient.\\n\\nNo real student or family data was used in this message.',
@@ -82,8 +86,26 @@ export default function Communications() {
 
   const handleSend = (id: string) => {
     if (!sendingEnabled) return;
-    setComms((current) => current.map((item) => item.id === id ? { ...item, status: 'sent' } : item));
-    addGmailActionLog('email_sent', `Sent approved synthetic draft ${id} through Gmail`);
+    const communication = comms.find((item) => item.id === id);
+    if (!communication?.subject) return;
+    setSendError('');
+    sendGmail.mutate({
+      data: {
+        recipient: 'connected-test-account',
+        subject: communication.subject,
+        body: communication.message,
+        approved: true,
+        syntheticDataOnly: true,
+      },
+    }, {
+      onSuccess: () => {
+        setComms((current) => current.map((item) => item.id === id ? { ...item, status: 'sent' } : item));
+        addGmailActionLog('email_sent', `Sent approved synthetic draft ${id} to the connected Gmail test account`);
+      },
+      onError: () => {
+        setSendError('Gmail could not send this demo message. The draft remains approved and unsent.');
+      },
+    });
   };
 
   return (
@@ -109,6 +131,12 @@ export default function Communications() {
                 </p>
               </div>
             </div>
+
+            {sendError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                {sendError}
+              </div>
+            )}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Pending Review</h2>
@@ -185,10 +213,10 @@ export default function Communications() {
                     <CardFooter className="flex-col items-stretch gap-2 border-t bg-muted/30 pt-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <LockKeyhole className="h-3.5 w-3.5" />
-                        {sendingEnabled ? 'Valid Gmail credentials detected.' : 'Connect a valid Gmail demo account in Settings to enable sending.'}
+                        {sendingEnabled ? 'Delivery is restricted to your connected Gmail test account.' : 'Connect a valid Gmail demo account in Settings to enable sending.'}
                       </div>
-                      <Button onClick={() => handleSend(comm.id)} disabled={!sendingEnabled} className="gap-2">
-                        <Mail className="h-4 w-4" /> Approve &amp; Send
+                      <Button onClick={() => handleSend(comm.id)} disabled={!sendingEnabled || sendGmail.isPending} className="gap-2">
+                        <Mail className="h-4 w-4" /> {sendGmail.isPending ? 'Sending...' : 'Approve & Send'}
                       </Button>
                     </CardFooter>
                   )}

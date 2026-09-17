@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: gmail
+    description: Safe Gmail demo-account operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /gmail/status:
+    get:
+      operationId: getGmailStatus
+      tags: [gmail]
+      summary: Check Gmail connection
+      description: Verifies that the server can access the connected Gmail demo account without exposing account credentials or its address.
+      responses:
+        "200":
+          description: Gmail connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GmailStatus"
+  /gmail/send:
+    post:
+      operationId: sendGmailDemoEmail
+      tags: [gmail]
+      summary: Send an approved synthetic demo email
+      description: Sends a reviewed synthetic message to the connected Gmail account itself. The client must require explicit approval before calling this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GmailDemoEmailInput"
+      responses:
+        "200":
+          description: Demo email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GmailSendResult"
+        "400":
+          description: Invalid or unsafe message
+        "503":
+          description: Gmail connection unavailable
 components:
   schemas:
     HealthStatus:
@@ -33,4 +71,45 @@ components:
           type: string
       required:
         - status
+    GmailStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        canSend:
+          type: boolean
+        accountLabel:
+          type: string
+      required: [connected, canSend, accountLabel]
+    GmailDemoEmailInput:
+      type: object
+      properties:
+        recipient:
+          type: string
+          const: connected-test-account
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 160
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        approved:
+          type: boolean
+          const: true
+        syntheticDataOnly:
+          type: boolean
+          const: true
+      required: [recipient, subject, body, approved, syntheticDataOnly]
+    GmailSendResult:
+      type: object
+      properties:
+        sent:
+          type: boolean
+        messageId:
+          type: string
+        recipientLabel:
+          type: string
+      required: [sent, messageId, recipientLabel]
 

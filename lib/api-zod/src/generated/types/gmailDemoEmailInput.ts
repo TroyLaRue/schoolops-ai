@@ -5,15 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface GmailStatus {
-  connected: boolean;
-  canSend: boolean;
-  accountLabel: string;
-}
 
 export interface GmailDemoEmailInput {
   recipient: 'connected-test-account';
@@ -30,10 +21,3 @@ export interface GmailDemoEmailInput {
   approved: true;
   syntheticDataOnly: true;
 }
-
-export interface GmailSendResult {
-  sent: boolean;
-  messageId: string;
-  recipientLabel: string;
-}
-

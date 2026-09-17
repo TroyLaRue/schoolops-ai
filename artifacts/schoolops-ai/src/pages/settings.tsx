@@ -3,11 +3,14 @@ import { Sidebar } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, Button, Badge } from '@/components/ui';
 import { Building, ShieldCheck, Link2, BellRing, Database, AlertCircle, Mail, ExternalLink, LockKeyhole, CheckCircle2, Clock3 } from 'lucide-react';
 import { GMAIL_STATE_EVENT, getGmailActionLog, getGmailStatus, setGmailStatus, type GmailActionLogEntry, type GmailConnectionStatus } from '@/lib/gmail-demo';
+import { useGetGmailStatus } from '@workspace/api-client-react';
 
 export default function Settings() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [gmailStatus, setGmailStatusState] = useState<GmailConnectionStatus>(getGmailStatus);
   const [gmailLog, setGmailLog] = useState<GmailActionLogEntry[]>(getGmailActionLog);
+  const gmailConnection = useGetGmailStatus();
+  const isGmailConnected = gmailConnection.data?.connected === true;
 
   React.useEffect(() => {
     const syncGmailState = () => {
@@ -17,6 +20,10 @@ export default function Settings() {
     window.addEventListener(GMAIL_STATE_EVENT, syncGmailState);
     return () => window.removeEventListener(GMAIL_STATE_EVENT, syncGmailState);
   }, []);
+
+  React.useEffect(() => {
+    if (isGmailConnected) setGmailStatus('connected');
+  }, [isGmailConnected]);
 
   const handleSave = () => {
     setSaveStatus('saving');
@@ -68,9 +75,9 @@ export default function Settings() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant={gmailStatus === 'connected' ? 'success' : 'outline'} className="w-fit gap-1.5 py-1">
-                    {gmailStatus === 'connected' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
-                    {gmailStatus === 'connected' ? 'Connected' : gmailStatus === 'oauth_pending' ? 'OAuth setup pending' : 'Not connected'}
+                  <Badge variant={isGmailConnected ? 'success' : 'outline'} className="w-fit gap-1.5 py-1">
+                    {isGmailConnected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
+                    {isGmailConnected ? 'Connected' : gmailConnection.isLoading ? 'Checking connection' : gmailStatus === 'oauth_pending' ? 'OAuth setup pending' : 'Not connected'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -88,11 +95,13 @@ export default function Settings() {
                     </ol>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <Button onClick={handleConnectGmail} className="gap-2" disabled={gmailStatus === 'oauth_pending'}>
-                      <ExternalLink className="h-4 w-4" />
-                      {gmailStatus === 'oauth_pending' ? 'Connection requested' : 'Connect Gmail'}
+                    <Button onClick={handleConnectGmail} className="gap-2" disabled={isGmailConnected || gmailStatus === 'oauth_pending'}>
+                      {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                      {isGmailConnected ? 'Gmail Connected' : gmailStatus === 'oauth_pending' ? 'Connection requested' : 'Connect Gmail'}
                     </Button>
-                    <span className="text-xs text-muted-foreground">Sending stays disabled until valid credentials are confirmed.</span>
+                    <span className="text-xs text-muted-foreground">
+                      {isGmailConnected ? 'Authorized for synthetic, self-addressed test messages only.' : 'Sending stays disabled until valid credentials are confirmed.'}
+                    </span>
                   </div>
                 </div>
 
