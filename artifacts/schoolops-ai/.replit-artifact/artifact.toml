@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SchoolOps AI"
+description = "A portfolio-ready AI operations agent demo for school administrators. It audits synthetic attendance, enrollment, document, and tuition data; prioritizes issues with evidence; recommends actions; answers natural-language questions; and keeps humans in control of simulated external actions."
+version = "1.0.0"
+id = "artifacts/schoolops-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21159
+
+[services.development]
+run = "pnpm --filter @workspace/schoolops-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/schoolops-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/schoolops-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21159"
+BASE_PATH = "/"
