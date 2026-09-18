@@ -1,5 +1,5 @@
 export type IssueSeverity = 'critical' | 'attention' | 'healthy';
-export type ActionStatus = 'pending' | 'approved' | 'dismissed';
+export type ActionStatus = 'pending' | 'approved' | 'dismissed' | 'completed';
 export type IssueStatus = 'open' | 'resolved';
 
 export interface RecommendedAction {
