@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: gmail
     description: Safe Gmail demo-account operations
+  - name: history
+    description: Persistent SchoolOps agent runs and action history
 paths:
   /healthz:
     get:
@@ -62,6 +64,101 @@ paths:
           description: Invalid or unsafe message
         "503":
           description: Gmail connection unavailable
+  /history:
+    get:
+      operationId: getActivityHistory
+      tags: [history]
+      summary: Review persistent agent activity history
+      description: Returns synthetic agent runs, findings, recommendations, approvals, dismissals, drafts, and completed actions.
+      responses:
+        "200":
+          description: Activity history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityHistory"
+  /agent-runs:
+    post:
+      operationId: createAgentRun
+      tags: [history]
+      summary: Persist a new agent run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRunInput"
+      responses:
+        "201":
+          description: Persisted agent run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRun"
+  /agent-runs/{id}/complete:
+    post:
+      operationId: completeAgentRun
+      tags: [history]
+      summary: Mark an agent run completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed agent run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRun"
+        "404":
+          description: Agent run not found
+  /actions:
+    post:
+      operationId: createAgentAction
+      tags: [history]
+      summary: Persist a standalone draft or recommended action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentActionInput"
+      responses:
+        "201":
+          description: Persisted action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentAction"
+  /actions/{id}:
+    patch:
+      operationId: updateAgentAction
+      tags: [history]
+      summary: Approve, dismiss, or complete an action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentActionUpdate"
+      responses:
+        "200":
+          description: Updated action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentAction"
+        "404":
+          description: Action not found
 components:
   schemas:
     HealthStatus:
@@ -112,4 +209,117 @@ components:
         recipientLabel:
           type: string
       required: [sent, messageId, recipientLabel]
+    AgentActionStatus:
+      type: string
+      enum: [pending, approved, dismissed, completed]
+    AgentRunStatus:
+      type: string
+      enum: [running, completed, failed]
+    AgentAction:
+      type: object
+      properties:
+        id: { type: integer }
+        sourceId: { type: string }
+        issueId: { type: [integer, "null"] }
+        type: { type: string, enum: [communication, task] }
+        title: { type: string }
+        description: { type: string }
+        content: { type: [string, "null"] }
+        recipient: { type: [string, "null"] }
+        subject: { type: [string, "null"] }
+        channel: { type: [string, "null"], enum: [email, sms, null] }
+        reason: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/AgentActionStatus" }
+        createdAt: { type: string, format: date-time }
+        approvedAt: { type: [string, "null"], format: date-time }
+        dismissedAt: { type: [string, "null"], format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+      required: [id, sourceId, issueId, type, title, description, content, recipient, subject, channel, reason, status, createdAt, approvedAt, dismissedAt, completedAt]
+    AgentIssue:
+      type: object
+      properties:
+        id: { type: integer }
+        sourceId: { type: string }
+        title: { type: string }
+        category: { type: string }
+        severity: { type: string, enum: [critical, attention, healthy] }
+        evidence: { type: string }
+        impact: { type: string }
+        status: { type: string, enum: [open, resolved] }
+        createdAt: { type: string, format: date-time }
+        actions:
+          type: array
+          items: { $ref: "#/components/schemas/AgentAction" }
+      required: [id, sourceId, title, category, severity, evidence, impact, status, createdAt, actions]
+    AgentRun:
+      type: object
+      properties:
+        id: { type: integer }
+        status: { $ref: "#/components/schemas/AgentRunStatus" }
+        activityLog:
+          type: array
+          items: { type: string }
+        summary: { type: [string, "null"] }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        issueCount: { type: integer }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/AgentIssue" }
+      required: [id, status, activityLog, summary, startedAt, completedAt, createdAt, issueCount, issues]
+    AgentActionInput:
+      type: object
+      properties:
+        runId: { type: [integer, "null"] }
+        issueId: { type: [integer, "null"] }
+        sourceId: { type: string, minLength: 1 }
+        type: { type: string, enum: [communication, task] }
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        content: { type: [string, "null"] }
+        recipient: { type: [string, "null"] }
+        subject: { type: [string, "null"] }
+        channel: { type: [string, "null"], enum: [email, sms, null] }
+        reason: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/AgentActionStatus" }
+      required: [sourceId, type, title, description, content, recipient, subject, channel, reason, status]
+    AgentActionUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/AgentActionStatus" }
+      required: [status]
+    AgentIssueInput:
+      type: object
+      properties:
+        sourceId: { type: string }
+        title: { type: string }
+        category: { type: string }
+        severity: { type: string, enum: [critical, attention, healthy] }
+        evidence: { type: string }
+        impact: { type: string }
+        actions:
+          type: array
+          items: { $ref: "#/components/schemas/AgentActionInput" }
+      required: [sourceId, title, category, severity, evidence, impact, actions]
+    AgentRunInput:
+      type: object
+      properties:
+        activityLog:
+          type: array
+          items: { type: string }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/AgentIssueInput" }
+      required: [activityLog, issues]
+    ActivityHistory:
+      type: object
+      properties:
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/AgentRun" }
+        actions:
+          type: array
+          items: { $ref: "#/components/schemas/AgentAction" }
+      required: [runs, actions]
 
