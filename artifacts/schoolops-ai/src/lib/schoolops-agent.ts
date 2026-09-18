@@ -66,7 +66,7 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
   if (question.includes('attendance') || question.includes('absent') || question.includes('risk')) {
     const atRisk = scopedStudents.filter((student) => student.attendanceRisk !== 'low');
     return {
-      facts: `Today's school-wide attendance is ${DAILY_ATTENDANCE.overallRate}%, compared with a ${DAILY_ATTENDANCE.historicalRate}% historical average. Grade 11 is lowest at ${DAILY_ATTENDANCE.grade11Rate}% with ${DAILY_ATTENDANCE.grade11Absent} absences.`,
+      facts: `Today's school-wide attendance is ${NORMALIZED_SCHOOL_DATA.attendance.overallRate}%, compared with a ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}% historical average. Grade 11 is lowest at ${NORMALIZED_SCHOOL_DATA.attendance.grade11Rate}% with ${NORMALIZED_SCHOOL_DATA.attendance.grade11Absent} absences.`,
       evidence: atRisk.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${student.attendanceRate}% attendance (${student.attendanceRisk} risk)`),
       recommendation: 'Investigate the Grade 11 variance first, then review high-risk students for recurring absence patterns.',
       suggestedAction: 'Draft a check-in request for Grade 11 advisors',
@@ -78,9 +78,9 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
       facts: 'Today has two critical priorities: missing compliance documents and the Grade 11 attendance anomaly. Aging admissions inquiries need attention; tuition collection is healthy overall.',
       evidence: [
         'Operations brief · Required Documents: critical',
-        `Attendance feed · Grade 11: ${DAILY_ATTENDANCE.grade11Rate}% vs. ${DAILY_ATTENDANCE.historicalRate}% baseline`,
-        `Admissions CRM · ${SYNTHETIC_INQUIRIES.filter((item) => item.submittedDaysAgo >= 2 && (item.lastFollowUpDaysAgo === null || item.lastFollowUpDaysAgo >= 2)).length} overdue inquiries`,
-        `Finance summary · ${TUITION_SUMMARY.collectionRate}% collected`,
+        `Attendance feed · Grade 11: ${NORMALIZED_SCHOOL_DATA.attendance.grade11Rate}% vs. ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}% baseline`,
+        `Admissions CRM · ${NORMALIZED_SCHOOL_DATA.inquiries.filter((item) => item.submittedDaysAgo >= 2 && (item.lastFollowUpDaysAgo === null || item.lastFollowUpDaysAgo >= 2)).length} overdue inquiries`,
+        `Finance summary · ${NORMALIZED_SCHOOL_DATA.tuition.collectionRate}% collected`,
       ],
       recommendation: 'Address compliance before today’s deadline, investigate Grade 11 attendance by noon, then clear overdue admissions follow-ups.',
       suggestedAction: 'Create a prioritized follow-up task list',
