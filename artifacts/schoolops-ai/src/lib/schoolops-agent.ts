@@ -66,18 +66,23 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
     : NORMALIZED_SCHOOL_DATA.students;
 
   if (question.includes('document') || question.includes('tdap') || question.includes('physical') || question.includes('immuniz') || question.includes('booster')) {
-    const students = scopedStudents.filter((student) => student.missingDocuments.length > 0);
+    const requestedDocument = question.includes('immuniz') || question.includes('tdap') || question.includes('booster')
+      ? (document: string) => /tdap|immuniz|booster/i.test(document)
+      : question.includes('physical')
+        ? (document: string) => /physical/i.test(document)
+        : () => true;
+    const students = scopedStudents.filter((student) => student.missingDocuments.some(requestedDocument));
     const scope = grade ? `Grade ${grade}` : 'the synthetic directory';
     return {
       facts: `${students.length} student${students.length === 1 ? '' : 's'} in ${scope} have missing required documents.`,
       evidence: students.length
-        ? students.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: missing ${student.missingDocuments.join(', ')}`)
+        ? students.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: missing ${student.missingDocuments.filter(requestedDocument).join(', ')}`)
         : [`No missing-document flags found among ${scopedStudents.length} matching synthetic records.`],
       recommendation: students.length ? 'Prioritize records with a compliance deadline, then request the specific missing item from each family.' : 'No document follow-up is recommended for this group.',
       suggestedAction: students.length ? `Draft document reminders for ${students.length} famil${students.length === 1 ? 'y' : 'ies'}` : undefined,
       studentRecords: students.map((student) => ({
         ...toStudentEvidence(student),
-        reasons: student.missingDocuments.map((document) => `Missing required document: ${document}`),
+        reasons: student.missingDocuments.filter(requestedDocument).map((document) => `Missing required document: ${document}`),
       })),
     };
   }
