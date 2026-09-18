@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'wouter';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, Badge, Button } from '@/components/ui';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Search, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
 
 export default function Students() {
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState<string>('all');
+  const [, setLocation] = useLocation();
   
   const filteredStudents = NORMALIZED_SCHOOL_DATA.students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -57,7 +61,19 @@ export default function Students() {
 
             <div className="space-y-3 md:hidden">
               {filteredStudents.map((student) => (
-                <Card key={student.id} className="p-4">
+                <Card
+                  key={student.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => setLocation(`/students/${student.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setLocation(`/students/${student.id}`);
+                    }
+                  }}
+                  className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="font-semibold">{student.name}</div>
@@ -90,7 +106,7 @@ export default function Students() {
                         <span className="text-xs text-muted-foreground">Documents clear</span>
                       )}
                     </div>
-                    <Button variant="outline" size="sm" className="min-h-10 shrink-0">View Record</Button>
+                    <Link href={`/students/${student.id}`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "min-h-10 shrink-0")}>View Record</Link>
                   </div>
                 </Card>
               ))}
@@ -110,7 +126,19 @@ export default function Students() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredStudents.length > 0 ? filteredStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-muted/50 transition-colors">
+                      <tr
+                        key={student.id}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => setLocation(`/students/${student.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setLocation(`/students/${student.id}`);
+                          }
+                        }}
+                        className="cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      >
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-medium text-foreground">{student.name}</span>
@@ -150,7 +178,7 @@ export default function Students() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <Button variant="ghost" size="sm">View Record</Button>
+                          <Link href={`/students/${student.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>View Record</Link>
                         </td>
                       </tr>
                     )) : (

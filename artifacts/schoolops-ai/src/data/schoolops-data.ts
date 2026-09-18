@@ -15,6 +15,14 @@ export const SMARTCARE_DEMO_CONNECTOR = {
   liveAccess: false,
 };
 
+export const REQUIRED_STUDENT_DOCUMENTS = [
+  'Emergency Contact',
+  'Annual Physical',
+  'Tdap Booster',
+  'Enrollment Agreement',
+  'Birth Certificate',
+] as const;
+
 export const SMARTCARE_DEMO_FEED = {
   students: SYNTHETIC_STUDENTS.map((student) => ({
     sourceRecordId: student.id,
@@ -32,10 +40,13 @@ export const SMARTCARE_DEMO_FEED = {
     attendanceRisk: student.attendanceRisk,
   })),
   documents: SYNTHETIC_STUDENTS.flatMap((student) =>
-    student.missingDocuments.map((document) => ({
+    REQUIRED_STUDENT_DOCUMENTS.map((document) => ({
       sourceRecordId: student.id,
       document,
-      status: 'missing' as const,
+      status: student.missingDocuments.some((missing) =>
+        missing.toLowerCase().includes(document.toLowerCase())
+        || document.toLowerCase().includes(missing.toLowerCase()),
+      ) ? 'missing' as const : 'completed' as const,
     })),
   ),
 };
@@ -43,6 +54,7 @@ export const SMARTCARE_DEMO_FEED = {
 export interface NormalizedStudentRecord extends StudentRecord {
   sourceSystem: typeof SMARTCARE_DEMO_CONNECTOR.id;
   sourceRecordId: string;
+  completedDocuments: string[];
 }
 
 export interface NormalizedSchoolOpsData {
@@ -63,7 +75,10 @@ function normalizeSmartcareFeed(): NormalizedSchoolOpsData {
     const enrollment = SMARTCARE_DEMO_FEED.enrollments.find((item) => item.sourceRecordId === student.sourceRecordId);
     const attendance = SMARTCARE_DEMO_FEED.attendance.find((item) => item.sourceRecordId === student.sourceRecordId);
     const documents = SMARTCARE_DEMO_FEED.documents
-      .filter((item) => item.sourceRecordId === student.sourceRecordId)
+      .filter((item) => item.sourceRecordId === student.sourceRecordId && item.status === 'missing')
+      .map((item) => item.document);
+    const completedDocuments = SMARTCARE_DEMO_FEED.documents
+      .filter((item) => item.sourceRecordId === student.sourceRecordId && item.status === 'completed')
       .map((item) => item.document);
 
     return {
@@ -75,6 +90,7 @@ function normalizeSmartcareFeed(): NormalizedSchoolOpsData {
       attendanceRate: attendance?.attendanceRate ?? 0,
       attendanceRisk: attendance?.attendanceRisk ?? 'low',
       missingDocuments: documents,
+      completedDocuments,
       enrollmentStatus: enrollment?.enrollmentStatus ?? 'active',
       tuitionStatus: enrollment?.tuitionStatus ?? 'current',
     };
