@@ -54,6 +54,36 @@ export const SendGmailDemoEmailResponse = zod.object({
 
 
 /**
+ * Verifies that the server can access a writable connected calendar without exposing calendar or account details.
+ * @summary Check Google Calendar connection
+ */
+export const GetCalendarStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "canCreate": zod.boolean(),
+  "accountLabel": zod.string()
+})
+
+
+/**
+ * Creates a no-attendee event from an already-approved persisted SchoolOps action, then marks that action completed.
+ * @summary Create an approved synthetic follow-up event
+ */
+export const CreateCalendarFollowUpBody = zod.object({
+  "actionId": zod.number().int(),
+  "approved": zod.literal(true),
+  "syntheticDataOnly": zod.literal(true)
+})
+
+export const CreateCalendarFollowUpResponse = zod.object({
+  "created": zod.boolean(),
+  "eventId": zod.string(),
+  "calendarLabel": zod.string(),
+  "actionId": zod.number().int(),
+  "completedAt": zod.coerce.date()
+})
+
+
+/**
  * Returns synthetic agent runs, findings, recommendations, approvals, dismissals, drafts, and completed actions.
  * @summary Review persistent agent activity history
  */
@@ -87,7 +117,7 @@ export const GetActivityHistoryResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -107,7 +137,7 @@ export const GetActivityHistoryResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -144,7 +174,7 @@ export const CreateAgentRunBody = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed'])
 }))
@@ -180,7 +210,7 @@ export const CreateAgentRunResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -228,7 +258,7 @@ export const CompleteAgentRunResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -257,7 +287,7 @@ export const CreateAgentActionBody = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed'])
 })
@@ -272,7 +302,7 @@ export const CreateAgentActionResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -303,7 +333,7 @@ export const UpdateAgentActionResponse = zod.object({
   "content": zod.string().nullable(),
   "recipient": zod.string().nullable(),
   "subject": zod.string().nullable(),
-  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal('calendar'),zod.literal(null)]).nullable(),
   "reason": zod.string().nullable(),
   "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
   "createdAt": zod.coerce.date(),

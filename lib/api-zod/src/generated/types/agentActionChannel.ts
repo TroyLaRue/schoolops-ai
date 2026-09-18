@@ -15,4 +15,5 @@ export type AgentActionChannel = typeof AgentActionChannel[keyof typeof AgentAct
 export const AgentActionChannel = {
   email: 'email',
   sms: 'sms',
+  calendar: 'calendar',
 } as const;

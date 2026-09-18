@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: gmail
     description: Safe Gmail demo-account operations
+  - name: calendar
+    description: Human-approved Google Calendar follow-up operations
   - name: history
     description: Persistent SchoolOps agent runs and action history
 paths:
@@ -64,6 +66,46 @@ paths:
           description: Invalid or unsafe message
         "503":
           description: Gmail connection unavailable
+  /calendar/status:
+    get:
+      operationId: getCalendarStatus
+      tags: [calendar]
+      summary: Check Google Calendar connection
+      description: Verifies that the server can access a writable connected calendar without exposing calendar or account details.
+      responses:
+        "200":
+          description: Calendar connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarStatus"
+  /calendar/follow-ups:
+    post:
+      operationId: createCalendarFollowUp
+      tags: [calendar]
+      summary: Create an approved synthetic follow-up event
+      description: Creates a no-attendee event from an already-approved persisted SchoolOps action, then marks that action completed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarFollowUpApproval"
+      responses:
+        "200":
+          description: Follow-up event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarFollowUpResult"
+        "400":
+          description: Invalid or unsafe follow-up request
+        "404":
+          description: Approved action not found
+        "409":
+          description: Action has not been approved or was already completed
+        "503":
+          description: Google Calendar connection unavailable
   /history:
     get:
       operationId: getActivityHistory
@@ -209,6 +251,43 @@ components:
         recipientLabel:
           type: string
       required: [sent, messageId, recipientLabel]
+    CalendarStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        canCreate:
+          type: boolean
+        accountLabel:
+          type: string
+      required: [connected, canCreate, accountLabel]
+    CalendarFollowUpApproval:
+      type: object
+      properties:
+        actionId:
+          type: integer
+        approved:
+          type: boolean
+          const: true
+        syntheticDataOnly:
+          type: boolean
+          const: true
+      required: [actionId, approved, syntheticDataOnly]
+    CalendarFollowUpResult:
+      type: object
+      properties:
+        created:
+          type: boolean
+        eventId:
+          type: string
+        calendarLabel:
+          type: string
+        actionId:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+      required: [created, eventId, calendarLabel, actionId, completedAt]
     AgentActionStatus:
       type: string
       enum: [pending, approved, dismissed, completed]
@@ -227,7 +306,7 @@ components:
         content: { type: [string, "null"] }
         recipient: { type: [string, "null"] }
         subject: { type: [string, "null"] }
-        channel: { type: [string, "null"], enum: [email, sms, null] }
+        channel: { type: [string, "null"], enum: [email, sms, calendar, null] }
         reason: { type: [string, "null"] }
         status: { $ref: "#/components/schemas/AgentActionStatus" }
         createdAt: { type: string, format: date-time }
@@ -280,7 +359,7 @@ components:
         content: { type: [string, "null"] }
         recipient: { type: [string, "null"] }
         subject: { type: [string, "null"] }
-        channel: { type: [string, "null"], enum: [email, sms, null] }
+        channel: { type: [string, "null"], enum: [email, sms, calendar, null] }
         reason: { type: [string, "null"] }
         status: { $ref: "#/components/schemas/AgentActionStatus" }
       required: [sourceId, type, title, description, content, recipient, subject, channel, reason, status]

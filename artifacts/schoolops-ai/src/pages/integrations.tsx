@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useGetGmailStatus } from '@workspace/api-client-react';
+import { useGetGmailStatus, useGetCalendarStatus } from '@workspace/api-client-react';
 import { Sidebar } from '@/components/layout/shell';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -117,11 +117,15 @@ function IntegrationCard({
 
 export default function Integrations() {
   const gmailConnection = useGetGmailStatus();
+  const calendarConnection = useGetCalendarStatus();
   const [showSmartcareMapping, setShowSmartcareMapping] = useState(false);
   const [showImportMapping, setShowImportMapping] = useState(false);
 
   const gmailIsConnected = gmailConnection.data?.connected === true;
   const gmailIsChecking = gmailConnection.isLoading;
+
+  const calendarIsConnected = calendarConnection.data?.connected === true;
+  const calendarIsChecking = calendarConnection.isLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -273,15 +277,63 @@ export default function Integrations() {
 
                 <IntegrationCard
                   name="Google Calendar"
-                  description="Planned source for schedule context, meetings, deadlines, and school-day constraints."
-                  status="planned"
+                  description="A connected source for scheduling context and automated follow-ups."
+                  status={calendarIsConnected ? 'connected' : 'planned'}
                   tone="amber"
                   icon={<CalendarDays className="h-5 w-5" />}
                 >
-                  <div className="flex items-center gap-3 rounded-lg border border-dashed bg-muted/20 p-3">
-                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <p className="text-xs leading-5 text-muted-foreground">Calendar events are not connected. Planning work will define permissions first.</p>
-                  </div>
+                  {calendarIsChecking ? (
+                    <div className="space-y-3" aria-label="Checking Calendar connection">
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                      <div className="h-3 w-full animate-pulse rounded bg-muted" />
+                      <div className="h-3 w-4/5 animate-pulse rounded bg-muted" />
+                    </div>
+                  ) : calendarConnection.isError ? (
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm">
+                      <p className="font-medium text-destructive">Connection status unavailable</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">We could not verify the connected calendar account.</p>
+                      <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={() => calendarConnection.refetch()}>
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Retry check
+                      </Button>
+                    </div>
+                  ) : calendarIsConnected ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/25 px-3 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <HeartPulse className="h-4 w-4 text-success" />
+                          <span className="text-sm font-medium">Connection verified</span>
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground">LIVE STATUS</span>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <dt className="text-muted-foreground">Account label</dt>
+                          <dd className="mt-1 truncate font-medium text-foreground">{calendarConnection.data?.accountLabel ?? 'Demo calendar'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Event creation</dt>
+                          <dd className="mt-1 font-medium text-foreground">{calendarConnection.data?.canCreate ? 'Approval required' : 'Disabled'}</dd>
+                        </div>
+                      </dl>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        Synthetic tasks only. Follow-ups are created without attendees and require explicit human approval.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 rounded-lg border border-dashed bg-muted/20 p-3">
+                      <div className="flex items-start gap-3">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <p className="text-xs leading-5 text-muted-foreground">
+                          Google Calendar is not connected with event-creation access. Complete OAuth in the workspace Integrations tool, then verify the connection here.
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => calendarConnection.refetch()}>
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Verify setup
+                      </Button>
+                    </div>
+                  )}
                 </IntegrationCard>
 
                 <IntegrationCard

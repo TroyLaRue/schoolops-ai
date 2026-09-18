@@ -26,6 +26,9 @@ import type {
   AgentActionUpdate,
   AgentRun,
   AgentRunInput,
+  CalendarFollowUpApproval,
+  CalendarFollowUpResult,
+  CalendarStatus,
   GmailDemoEmailInput,
   GmailSendResult,
   GmailStatus,
@@ -302,6 +305,173 @@ export const useSendGmailDemoEmail = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSendGmailDemoEmailMutationOptions(options));
+    }
+
+export const getGetCalendarStatusUrl = () => {
+
+
+
+
+  return `/api/calendar/status`
+}
+
+/**
+ * Verifies that the server can access a writable connected calendar without exposing calendar or account details.
+ * @summary Check Google Calendar connection
+ */
+export const getCalendarStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<CalendarStatus> => {
+
+  return customFetch<CalendarStatus>(getGetCalendarStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCalendarStatusQueryKey = () => {
+    return [
+    `/api/calendar/status`
+    ] as const;
+    }
+
+
+export const getGetCalendarStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCalendarStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCalendarStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCalendarStatus>>> = ({ signal }) => getCalendarStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCalendarStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCalendarStatus>>>
+export type GetCalendarStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check Google Calendar connection
+ */
+
+export function useGetCalendarStatus<TData = Awaited<ReturnType<typeof getCalendarStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCalendarStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCalendarFollowUpUrl = () => {
+
+
+
+
+  return `/api/calendar/follow-ups`
+}
+
+/**
+ * Creates a no-attendee event from an already-approved persisted SchoolOps action, then marks that action completed.
+ * @summary Create an approved synthetic follow-up event
+ */
+export const createCalendarFollowUp = async (calendarFollowUpApproval: CalendarFollowUpApproval, options?: Parameters<typeof customFetch>[1]): Promise<CalendarFollowUpResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CalendarFollowUpResult>(getCreateCalendarFollowUpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(calendarFollowUpApproval)
+  }
+);}
+
+
+
+
+
+export const getCreateCalendarFollowUpMutationKey = () => ['createCalendarFollowUp'] as const;
+
+export const getCreateCalendarFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCalendarFollowUp>>, TError,CreateCalendarFollowUpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCalendarFollowUp>>, TError,CreateCalendarFollowUpMutationVariables, TContext> => {
+
+const mutationKey = getCreateCalendarFollowUpMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCalendarFollowUp>>, CreateCalendarFollowUpMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCalendarFollowUp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCalendarFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof createCalendarFollowUp>>>
+    export type CreateCalendarFollowUpMutationBody = BodyType<CalendarFollowUpApproval>
+    export type CreateCalendarFollowUpMutationError = ErrorType<void>
+    export type CreateCalendarFollowUpMutationVariables = {data: BodyType<CalendarFollowUpApproval>}
+
+    /**
+ * @summary Create an approved synthetic follow-up event
+ */
+export const useCreateCalendarFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCalendarFollowUp>>, TError,CreateCalendarFollowUpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCalendarFollowUp>>,
+        TError,
+        CreateCalendarFollowUpMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCalendarFollowUpMutationOptions(options));
     }
 
 export const getGetActivityHistoryUrl = () => {

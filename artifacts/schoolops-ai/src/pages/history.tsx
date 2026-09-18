@@ -51,7 +51,7 @@ function ActionRow({ action }: { action: AgentAction }) {
   return (
     <div className="flex gap-3 border-t px-4 py-4 first:border-t-0">
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        {action.type === 'communication' ? <MessageSquare className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+        {action.type === 'communication' ? <MessageSquare className="h-4 w-4" /> : action.channel === 'calendar' ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -61,12 +61,22 @@ function ActionRow({ action }: { action: AgentAction }) {
           </span>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="capitalize">{action.type}</span>
+          <span className="capitalize">{action.channel === 'calendar' ? 'calendar' : action.type}</span>
           <span>{formatDate(actionDate)}</span>
           {action.recipient && <span className="flex items-center gap-1"><UserRound className="h-3 w-3" />{action.recipient}</span>}
         </div>
         <p className="text-sm text-muted-foreground">{action.description}</p>
         {action.subject && <p className="text-xs font-medium text-foreground">Subject: {action.subject}</p>}
+        {action.content && action.channel === 'calendar' && (
+           <div className="mt-2 text-xs font-mono text-muted-foreground whitespace-pre-wrap p-2 bg-background border rounded-md line-clamp-2">
+              {(() => {
+                try {
+                   const data = JSON.parse(action.content);
+                   return `Event: ${data.summary}\nTime: ${new Date(data.start).toLocaleString()} - ${new Date(data.end).toLocaleTimeString()}`;
+                } catch { return action.content; }
+              })()}
+           </div>
+        )}
       </div>
     </div>
   );

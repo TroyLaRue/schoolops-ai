@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui';
@@ -14,24 +14,55 @@ import {
   AlertCircle, 
   Clock3, 
   Mail, 
-  ArrowLeft 
+  ArrowLeft,
+  CalendarPlus,
+  CalendarDays
 } from 'lucide-react';
 import { 
   useGetActivityHistory, 
   useUpdateAgentAction, 
+  useCreateAgentAction,
+  useCreateCalendarFollowUp,
+  useGetCalendarStatus,
   getGetActivityHistoryQueryKey, 
+  getGetCalendarStatusQueryKey,
   type AgentAction 
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
-function ActionRow({ action, onApprove }: { action: AgentAction, onApprove: (id: number) => void }) {
+function ActionRow({
+  action,
+  onApprove,
+  onCreateCalendar,
+  calendarReady,
+  isCreatingCalendar,
+}: {
+  action: AgentAction;
+  onApprove: (action: AgentAction) => void;
+  onCreateCalendar: (action: AgentAction) => void;
+  calendarReady: boolean;
+  isCreatingCalendar: boolean;
+}) {
   const isPending = action.status === 'pending';
+  const isApprovedCalendar = action.status === 'approved' && action.channel === 'calendar';
   
   return (
     <div className="p-4 flex gap-3 hover:bg-muted/50 transition-colors">
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        {action.type === 'communication' ? <Mail className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+        {action.type === 'communication' ? <Mail className="h-4 w-4" /> : action.channel === 'calendar' ? <CalendarDays className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -43,7 +74,7 @@ function ActionRow({ action, onApprove }: { action: AgentAction, onApprove: (id:
             {action.status}
           </Badge>
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {action.type === 'communication' ? 'Gmail' : 'SchoolOps'}
+            {action.type === 'communication' ? 'Gmail' : action.channel === 'calendar' ? 'Calendar' : 'SchoolOps'}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground line-clamp-2">{action.description}</p>
@@ -58,11 +89,21 @@ function ActionRow({ action, onApprove }: { action: AgentAction, onApprove: (id:
            <span className="text-[10px] text-muted-foreground">
              {new Date(action.createdAt).toLocaleDateString()}
            </span>
-           {isPending && (
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onApprove(action.id)}>
+            {isPending && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onApprove(action)}>
                  Approve for review
              </Button>
            )}
+            {isApprovedCalendar && (
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                disabled={!calendarReady || isCreatingCalendar}
+                onClick={() => onCreateCalendar(action)}
+              >
+                {isCreatingCalendar ? 'Creating event…' : calendarReady ? 'Create calendar event' : 'Calendar unavailable'}
+              </Button>
+            )}
         </div>
       </div>
     </div>
@@ -74,7 +115,21 @@ export default function StudentDetail() {
   const studentId = params?.studentId;
   const queryClient = useQueryClient();
   const { data: history } = useGetActivityHistory();
+  const calendarStatus = useGetCalendarStatus();
   const updateAction = useUpdateAgentAction();
+  const createAction = useCreateAgentAction();
+  const createCalendarEvent = useCreateCalendarFollowUp();
+
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [followUpDate, setFollowUpDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + (d.getDay() === 5 ? 3 : d.getDay() === 6 ? 2 : 1)); // next business day
+    return d.toISOString().split('T')[0];
+  });
+  const [followUpTime, setFollowUpTime] = useState('09:00');
+  const [followUpSummary, setFollowUpSummary] = useState('Review student flags');
+  const [followUpDescription, setFollowUpDescription] = useState('Follow up on recent operational flags.');
+  const [calendarError, setCalendarError] = useState('');
 
   const student = useMemo(() => 
     NORMALIZED_SCHOOL_DATA.students.find(s => s.id === studentId),
@@ -101,9 +156,62 @@ export default function StudentDetail() {
   }, [history, student]);
   const relatedCommunications = relevantActions.filter((action) => action.type === 'communication');
 
-  const handleApprove = (actionId: number) => {
-    updateAction.mutate({ id: actionId, data: { status: 'approved' } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() })
+  const handleApprove = (action: AgentAction) => {
+    setCalendarError('');
+    updateAction.mutate({ id: action.id, data: { status: 'approved' } }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+      onError: () => setCalendarError('The recommendation could not be approved. No calendar event was created.'),
+    });
+  };
+
+  const handleCreateCalendar = (action: AgentAction) => {
+    setCalendarError('');
+    createCalendarEvent.mutate(
+      { data: { actionId: action.id, approved: true, syntheticDataOnly: true } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetCalendarStatusQueryKey() });
+        },
+        onError: () => setCalendarError('Google Calendar could not create this follow-up. The approved recommendation remains available to retry.'),
+      },
+    );
+  };
+
+  const handleCreateFollowUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!student) return;
+
+    const startDateTime = new Date(`${followUpDate}T${followUpTime}`);
+    const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // 30 mins
+
+    createAction.mutate({
+      data: {
+        sourceId: `CAL-${Date.now()}`,
+        type: 'task',
+        channel: 'calendar',
+        status: 'pending',
+        title: `Calendar task: ${followUpSummary}`,
+        description: followUpDescription,
+        reason: 'Administrator scheduled follow-up',
+        recipient: 'Connected Google Calendar',
+        subject: null,
+        content: JSON.stringify({
+          studentId: student.id,
+          studentName: student.name,
+          summary: followUpSummary,
+          description: followUpDescription,
+          start: startDateTime.toISOString(),
+          end: endDateTime.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        })
+      }
+    }, {
+      onSuccess: () => {
+        setFollowUpOpen(false);
+        queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+      },
+      onError: () => setCalendarError('The follow-up recommendation could not be staged. No external event was created.'),
     });
   };
 
@@ -152,6 +260,11 @@ export default function StudentDetail() {
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto space-y-6">
+            {calendarError && (
+              <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                {calendarError}
+              </div>
+            )}
             
             <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
               <div>
@@ -317,7 +430,14 @@ export default function StudentDetail() {
                        {relatedCommunications.length > 0 ? (
                         <div className="divide-y">
                             {relatedCommunications.slice(0, 4).map(action => (
-                              <ActionRow key={action.id} action={action} onApprove={handleApprove} />
+                               <ActionRow
+                                 key={action.id}
+                                 action={action}
+                                 onApprove={handleApprove}
+                                 onCreateCalendar={handleCreateCalendar}
+                                 calendarReady={calendarStatus.data?.canCreate === true}
+                                 isCreatingCalendar={createCalendarEvent.isPending}
+                               />
                            ))}
                         </div>
                       ) : (
@@ -331,23 +451,73 @@ export default function StudentDetail() {
 
                  <Card className="shadow-sm">
                    <CardHeader className="border-b pb-3">
-                     <div className="flex items-center justify-between gap-3">
-                       <CardTitle className="text-base font-semibold">Recommended Actions</CardTitle>
-                       <Badge variant="outline" className="text-[10px] font-medium">SchoolOps</Badge>
+                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                       <div className="flex items-center gap-3">
+                         <CardTitle className="text-base font-semibold">Recommended Actions</CardTitle>
+                         <Badge variant="outline" className="text-[10px] font-medium">SchoolOps</Badge>
+                       </div>
+                       
+                       <Dialog open={followUpOpen} onOpenChange={setFollowUpOpen}>
+                         <DialogTrigger asChild>
+                           <Button variant="outline" size="sm" className="h-8 gap-2">
+                             <CalendarPlus className="h-3.5 w-3.5" /> Stage Follow-up
+                           </Button>
+                         </DialogTrigger>
+                         <DialogContent className="sm:max-w-[425px]">
+                           <DialogHeader>
+                             <DialogTitle>Stage Calendar Follow-up</DialogTitle>
+                             <DialogDescription>
+                               Recommend a follow-up for {student.name}. This will be staged for your review before a Google Calendar event is created.
+                             </DialogDescription>
+                           </DialogHeader>
+                           <form onSubmit={handleCreateFollowUp} className="space-y-4 pt-4">
+                             <div className="grid grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                 <Label htmlFor="date">Date</Label>
+                                 <Input id="date" type="date" required value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} />
+                               </div>
+                               <div className="space-y-2">
+                                 <Label htmlFor="time">Time</Label>
+                                 <Input id="time" type="time" required value={followUpTime} onChange={e => setFollowUpTime(e.target.value)} />
+                               </div>
+                             </div>
+                             <div className="space-y-2">
+                               <Label htmlFor="summary">Event Summary</Label>
+                               <Input id="summary" placeholder="e.g. Review student flags" required value={followUpSummary} onChange={e => setFollowUpSummary(e.target.value)} />
+                             </div>
+                             <div className="space-y-2">
+                               <Label htmlFor="description">Description</Label>
+                               <Textarea id="description" className="min-h-[80px]" required value={followUpDescription} onChange={e => setFollowUpDescription(e.target.value)} />
+                             </div>
+                             <DialogFooter>
+                               <Button type="button" variant="outline" onClick={() => setFollowUpOpen(false)}>Cancel</Button>
+                               <Button type="submit" disabled={createAction.isPending}>Stage Action</Button>
+                             </DialogFooter>
+                           </form>
+                         </DialogContent>
+                       </Dialog>
+
                      </div>
                    </CardHeader>
                    <CardContent className="p-0">
                      {relevantActions.length > 0 ? (
                        <div className="divide-y">
                          {relevantActions.slice(0, 6).map((action) => (
-                           <ActionRow key={action.id} action={action} onApprove={handleApprove} />
+                           <ActionRow
+                             key={action.id}
+                             action={action}
+                             onApprove={handleApprove}
+                             onCreateCalendar={handleCreateCalendar}
+                             calendarReady={calendarStatus.data?.canCreate === true}
+                             isCreatingCalendar={createCalendarEvent.isPending}
+                           />
                          ))}
                        </div>
                      ) : (
                        <div className="p-6 text-center text-sm text-muted-foreground">No open or completed recommendations are linked to this student.</div>
                      )}
                      <div className="border-t bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
-                       Approval records administrator intent only. Any external Gmail delivery still requires the guarded send step in Communications Review.
+                       Approval records administrator intent only. Creating a Google Calendar event is a separate step, and Gmail delivery still requires the guarded send step in Communications Review.
                      </div>
                    </CardContent>
                  </Card>

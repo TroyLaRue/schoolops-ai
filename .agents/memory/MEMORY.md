@@ -1,1 +1,2 @@
 - [Gmail demo safety](gmail-demo-safety.md) — confirmed self-send delivery works; preserve synthetic-only content and explicit approval.
+- [Calendar side-effect safety](calendar-side-effect-safety.md) — use persisted approved actions as event source; keep approval and external creation separate.

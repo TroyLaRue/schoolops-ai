@@ -15,4 +15,5 @@ export type AgentActionInputChannel = typeof AgentActionInputChannel[keyof typeo
 export const AgentActionInputChannel = {
   email: 'email',
   sms: 'sms',
+  calendar: 'calendar',
 } as const;

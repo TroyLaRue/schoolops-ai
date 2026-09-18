@@ -37,6 +37,26 @@ export interface GmailSendResult {
   recipientLabel: string;
 }
 
+export interface CalendarStatus {
+  connected: boolean;
+  canCreate: boolean;
+  accountLabel: string;
+}
+
+export interface CalendarFollowUpApproval {
+  actionId: number;
+  approved: true;
+  syntheticDataOnly: true;
+}
+
+export interface CalendarFollowUpResult {
+  created: boolean;
+  eventId: string;
+  calendarLabel: string;
+  actionId: number;
+  completedAt: string;
+}
+
 export type AgentActionStatus = typeof AgentActionStatus[keyof typeof AgentActionStatus];
 
 
@@ -73,6 +93,7 @@ export type AgentActionChannel = typeof AgentActionChannel[keyof typeof AgentAct
 export const AgentActionChannel = {
   email: 'email',
   sms: 'sms',
+  calendar: 'calendar',
 } as const;
 
 export interface AgentAction {
@@ -164,6 +185,7 @@ export type AgentActionInputChannel = typeof AgentActionInputChannel[keyof typeo
 export const AgentActionInputChannel = {
   email: 'email',
   sms: 'sms',
+  calendar: 'calendar',
 } as const;
 
 export interface AgentActionInput {
