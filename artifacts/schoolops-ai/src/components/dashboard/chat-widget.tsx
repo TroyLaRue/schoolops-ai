@@ -56,10 +56,13 @@ export function ChatWidget() {
   return (
     <Card className="flex flex-col h-full shadow-sm border-muted flex-1 min-h-[520px] overflow-hidden">
       <CardHeader className="py-3 px-5 border-b bg-muted/20 shrink-0">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
-          <Sparkles className="h-4 w-4 text-primary" />
-          Ask SchoolOps
-        </CardTitle>
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Ask SchoolOps
+          </CardTitle>
+          <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">Normalized demo data</span>
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">

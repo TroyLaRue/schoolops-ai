@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, MessageSquare, Settings, Bell, History } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings, Bell, History, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Sidebar() {
@@ -10,6 +10,7 @@ export function Sidebar() {
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: Users, label: 'Students', href: '/students' },
     { icon: MessageSquare, label: 'Communications', href: '/communications' },
+    { icon: Link2, label: 'Integrations', href: '/integrations' },
     { icon: History, label: 'Activity History', mobileLabel: 'History', href: '/history' },
     { icon: Settings, label: 'Settings', href: '/settings' }
   ];
@@ -64,7 +65,7 @@ export function Sidebar() {
     </div>
     <nav
       aria-label="Main navigation"
-       className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card/95 px-1 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md md:hidden"
+       className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t bg-card/95 px-1 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md md:hidden"
     >
       {navItems.map((item) => {
         const isActive = location === item.href;

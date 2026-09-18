@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, Badge, Button } from '@/components/ui';
 import { Search, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
-import { SYNTHETIC_STUDENTS } from '@/data/school-data';
+import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
 
 export default function Students() {
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState<string>('all');
   
-  const filteredStudents = SYNTHETIC_STUDENTS.filter(student => {
+  const filteredStudents = NORMALIZED_SCHOOL_DATA.students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase()) || 
                           student.id.toLowerCase().includes(search.toLowerCase());
     const matchesRisk = filterRisk === 'all' || student.attendanceRisk === filterRisk;

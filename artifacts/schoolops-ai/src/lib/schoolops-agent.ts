@@ -1,9 +1,4 @@
-import {
-  DAILY_ATTENDANCE,
-  SYNTHETIC_INQUIRIES,
-  SYNTHETIC_STUDENTS,
-  TUITION_SUMMARY,
-} from '@/data/school-data';
+import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
 
 export interface AgentAnswer {
   facts: string;
@@ -26,8 +21,8 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
   const question = rawQuestion.toLowerCase();
   const grade = gradeFromQuestion(rawQuestion);
   const scopedStudents = grade
-    ? SYNTHETIC_STUDENTS.filter((student) => student.grade === grade)
-    : SYNTHETIC_STUDENTS;
+    ? NORMALIZED_SCHOOL_DATA.students.filter((student) => student.grade === grade)
+    : NORMALIZED_SCHOOL_DATA.students;
 
   if (question.includes('document') || question.includes('tdap') || question.includes('physical')) {
     const students = scopedStudents.filter((student) => student.missingDocuments.length > 0);
@@ -43,7 +38,7 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
   }
 
   if (question.includes('inquir') || question.includes('admission') || question.includes('follow-up') || question.includes('follow up')) {
-    const overdue = SYNTHETIC_INQUIRIES.filter((inquiry) =>
+    const overdue = NORMALIZED_SCHOOL_DATA.inquiries.filter((inquiry) =>
       inquiry.submittedDaysAgo >= 2 &&
       (inquiry.lastFollowUpDaysAgo === null || inquiry.lastFollowUpDaysAgo >= 2),
     );
@@ -58,10 +53,10 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
   if (question.includes('tuition') || question.includes('payment') || question.includes('financial') || question.includes('past due')) {
     const flagged = scopedStudents.filter((student) => student.tuitionStatus !== 'current');
     return {
-      facts: `${TUITION_SUMMARY.collectionRate}% of tuition is collected. ${TUITION_SUMMARY.pastDueAccounts} accounts are past due and ${TUITION_SUMMARY.paymentPlanAccounts} are on payment plans school-wide.`,
+      facts: `${NORMALIZED_SCHOOL_DATA.tuition.collectionRate}% of tuition is collected. ${NORMALIZED_SCHOOL_DATA.tuition.pastDueAccounts} accounts are past due and ${NORMALIZED_SCHOOL_DATA.tuition.paymentPlanAccounts} are on payment plans school-wide.`,
       evidence: [
         ...flagged.map((student) => `${student.id} · ${student.name}: ${student.tuitionStatus === 'past_due' ? 'past due' : 'payment plan'}`),
-        `Synthetic finance summary: ${TUITION_SUMMARY.currentAccounts} current accounts`,
+        `Synthetic finance summary: ${NORMALIZED_SCHOOL_DATA.tuition.currentAccounts} current accounts`,
       ],
       recommendation: 'Review past-due balances by age and existing payment arrangements before contacting families.',
       suggestedAction: flagged.length ? `Prepare an account-review task for ${flagged.length} visible flagged record${flagged.length === 1 ? '' : 's'}` : undefined,
