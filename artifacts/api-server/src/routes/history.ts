@@ -100,6 +100,7 @@ const SEED_COMMUNICATIONS = [
     recipient: "Williams Family (Olivia Williams, 8th)",
     channel: "sms",
     title: "Missing emergency contact forms",
+    subject: null,
     message: "Oakridge Middle: Olivia is missing required emergency contact forms. Please update via parent portal today to avoid field trip restrictions.",
     reason: "Missing emergency contacts.",
     status: "pending",

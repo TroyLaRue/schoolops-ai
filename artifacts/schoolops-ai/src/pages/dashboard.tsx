@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { getGetActivityHistoryQueryKey, useCompleteAgentRun, useCreateAgentRun, useGetActivityHistory, useUpdateAgentAction } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar, TopHeader } from '@/components/layout/shell';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { ChatWidget } from '@/components/dashboard/chat-widget';
@@ -11,23 +13,95 @@ export default function Dashboard() {
   const [isRunning, setIsRunning] = useState(false);
   const [hasRunBefore, setHasRunBefore] = useState(true); // Seeded state
   const [issues, setIssues] = useState<Issue[]>(MOCK_ISSUES);
+  const activeRunId = useRef<number | null>(null);
+  const actionRecordIds = useRef<Record<string, number>>({});
+  const queryClient = useQueryClient();
+  const history = useGetActivityHistory();
+  const createRun = useCreateAgentRun();
+  const completeRun = useCompleteAgentRun();
+  const updateAction = useUpdateAgentAction();
+  const [persistenceError, setPersistenceError] = useState('');
+
+  useEffect(() => {
+    if (activeRunId.current || !history.data?.runs[0]) return;
+    for (const issue of history.data.runs[0].issues) {
+      for (const action of issue.actions) {
+        actionRecordIds.current[action.sourceId] = action.id;
+      }
+    }
+  }, [history.data]);
   
   // Reset data when re-running audit
   const handleRunAudit = () => {
+    setPersistenceError('');
     setIsRunning(true);
     setHasRunBefore(true);
+    createRun.mutate({
+      data: {
+        activityLog: MOCK_ACTIVITY_LOG,
+        issues: MOCK_ISSUES.map((issue) => ({
+          sourceId: issue.id,
+          title: issue.title,
+          category: issue.category,
+          severity: issue.severity,
+          evidence: issue.evidence,
+          impact: issue.impact,
+          actions: issue.actions.map((action) => ({
+            sourceId: action.id,
+            type: action.type,
+            title: action.title,
+            description: action.description,
+            content: action.content ?? null,
+            recipient: null,
+            subject: null,
+            channel: null,
+            reason: null,
+            status: 'pending' as const,
+          })),
+        })),
+      },
+    }, {
+      onSuccess: (run) => {
+        activeRunId.current = run.id;
+        for (const issue of run.issues) {
+          for (const action of issue.actions) {
+            actionRecordIds.current[action.sourceId] = action.id;
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+      },
+      onError: () => setPersistenceError('This audit is running, but its history record could not be saved.'),
+    });
     // When running, clear the board visually for effect, or show skeletons
     // For this demo, we'll just dim them or show an empty state until it finishes
   };
 
   const handleAuditComplete = useCallback(() => {
     setIsRunning(false);
+    if (activeRunId.current) {
+      completeRun.mutate({ id: activeRunId.current }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+        onError: () => setPersistenceError('The audit finished, but its completion timestamp could not be saved.'),
+      });
+    }
     // Reset any dismissed actions to show the full board again for demo purposes
     setIssues(MOCK_ISSUES.map(issue => ({
       ...issue,
       actions: issue.actions.map(a => ({ ...a, status: 'pending' as const }))
     })));
-  }, []);
+  }, [completeRun, queryClient]);
+
+  const persistActionStatus = (actionId: string, status: 'approved' | 'dismissed') => {
+    const recordId = actionRecordIds.current[actionId];
+    if (!recordId) return;
+    updateAction.mutate({
+      id: recordId,
+      data: { status },
+    }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+      onError: () => setPersistenceError('The action changed on screen, but its history status could not be saved.'),
+    });
+  };
 
   const handleActionApprove = (issueId: string, actionId: string) => {
     setIssues(prev => prev.map(issue => {
@@ -41,6 +115,7 @@ export default function Dashboard() {
       }
       return issue;
     }));
+    persistActionStatus(actionId, 'approved');
   };
 
   const handleActionDismiss = (issueId: string, actionId: string) => {
@@ -55,6 +130,7 @@ export default function Dashboard() {
       }
       return issue;
     }));
+    persistActionStatus(actionId, 'dismissed');
   };
 
   const criticalIssues = issues.filter(i => i.severity === 'critical');
@@ -69,6 +145,11 @@ export default function Dashboard() {
         
         <main className="flex-1 p-4 md:p-8 overflow-y-auto relative">
           <div className="max-w-[1400px] mx-auto space-y-6">
+            {persistenceError && (
+              <div className="rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+                {persistenceError}
+              </div>
+            )}
             
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b">

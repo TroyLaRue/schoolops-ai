@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { getGetActivityHistoryQueryKey, useCreateAgentAction, useGetActivityHistory, useUpdateAgentAction } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, CardContent, CardHeader, CardFooter, Badge, Button } from '@/components/ui';
 import { Mail, CheckCircle2, Clock, XCircle, Smartphone, Info, Plus, LockKeyhole } from 'lucide-react';
@@ -17,6 +19,7 @@ interface Communication {
   reason: string;
   status: CommStatus;
   timestamp: string;
+  recordId?: number;
 }
 
 const INITIAL_COMMS: Communication[] = [
@@ -56,16 +59,49 @@ export default function Communications() {
   const [sendError, setSendError] = useState('');
   const gmailConnection = useGetGmailStatus();
   const sendGmail = useSendGmailDemoEmail();
+  const history = useGetActivityHistory();
+  const queryClient = useQueryClient();
+  const createAction = useCreateAgentAction();
+  const updateAction = useUpdateAgentAction();
   const sendingEnabled = gmailConnection.data?.canSend === true;
+
+  useEffect(() => {
+    if (!history.data) return;
+    const persistedComms: Communication[] = history.data.actions
+      .filter((action) => action.type === 'communication')
+      .map((action) => ({
+        id: action.sourceId,
+        recordId: action.id,
+        recipient: action.recipient ?? 'Synthetic recipient',
+        channel: action.channel === 'sms' ? 'sms' : 'email',
+        subject: action.subject ?? undefined,
+        message: action.content ?? '',
+        reason: action.reason ?? 'Synthetic SchoolOps recommendation.',
+        status: action.status === 'completed' ? 'sent' : action.status === 'approved' ? 'approved' : action.status === 'dismissed' ? 'rejected' : 'draft',
+        timestamp: new Date(action.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+      }));
+    setComms(persistedComms);
+  }, [history.data]);
 
   const handleApprove = (id: string) => {
     const communication = comms.find((item) => item.id === id);
     setComms(prev => prev.map(c => c.id === id ? { ...c, status: 'approved' } : c));
     if (communication) addGmailActionLog('draft_approved', `Approved synthetic draft ${communication.id}`);
+    if (communication?.recordId) {
+      updateAction.mutate({ id: communication.recordId, data: { status: 'approved' } }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+      });
+    }
   };
 
   const handleReject = (id: string) => {
+    const communication = comms.find((item) => item.id === id);
     setComms(prev => prev.map(c => c.id === id ? { ...c, status: 'rejected' } : c));
+    if (communication?.recordId) {
+      updateAction.mutate({ id: communication.recordId, data: { status: 'dismissed' } }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+      });
+    }
   };
 
   const handleCreateDraft = () => {
@@ -82,6 +118,25 @@ export default function Communications() {
     };
     setComms((current) => [draft, ...current]);
     addGmailActionLog('draft_created', `Created synthetic Gmail draft ${id}`);
+    createAction.mutate({
+      data: {
+        sourceId: id,
+        type: 'communication',
+        title: draft.subject ?? 'Synthetic Gmail draft',
+        description: 'Synthetic Gmail draft created for administrator review.',
+        content: draft.message,
+        recipient: draft.recipient,
+        subject: draft.subject ?? null,
+        channel: draft.channel,
+        reason: draft.reason,
+        status: 'pending',
+      },
+    }, {
+      onSuccess: (savedAction) => {
+        setComms((current) => current.map((item) => item.id === id ? { ...item, recordId: savedAction.id } : item));
+        queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+      },
+    });
   };
 
   const handleSend = (id: string) => {
@@ -101,6 +156,11 @@ export default function Communications() {
       onSuccess: () => {
         setComms((current) => current.map((item) => item.id === id ? { ...item, status: 'sent' } : item));
         addGmailActionLog('email_sent', `Sent approved synthetic draft ${id} to the connected Gmail test account`);
+        if (communication.recordId) {
+          updateAction.mutate({ id: communication.recordId, data: { status: 'completed' } }, {
+            onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+          });
+        }
       },
       onError: () => {
         setSendError('Gmail could not send this demo message. The draft remains approved and unsent.');
