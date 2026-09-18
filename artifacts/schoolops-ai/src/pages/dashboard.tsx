@@ -7,7 +7,7 @@ import { ChatWidget } from '@/components/dashboard/chat-widget';
 import { AboutModal } from '@/components/dashboard/about-modal';
 import { IssueCard } from '@/components/dashboard/issue-card';
 import { Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '@/components/ui';
-import { MOCK_ISSUES, Issue } from '@/data/mock';
+import { MOCK_ACTIVITY_LOG, MOCK_ISSUES, Issue } from '@/data/mock';
 
 export default function Dashboard() {
   const [isRunning, setIsRunning] = useState(false);
