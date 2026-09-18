@@ -212,7 +212,7 @@ export default function Communications() {
 
             <div className="space-y-4">
               {comms.map(comm => (
-                <Card key={comm.id} className={cn(
+                <Card key={comm.recordId ?? comm.id} className={cn(
                   "transition-all duration-200",
                   comm.status === 'approved' && "border-success/50 bg-success/5",
                   comm.status === 'rejected' && "border-destructive/50 bg-destructive/5 opacity-75"
