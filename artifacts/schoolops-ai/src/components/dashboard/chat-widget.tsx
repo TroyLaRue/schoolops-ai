@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
 import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check } from 'lucide-react';
 import { AgentAnswer, answerSchoolOpsQuestion } from '@/lib/schoolops-agent';
+import { SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -80,8 +81,37 @@ export function ChatWidget() {
                  {msg.content}
                  {msg.answer && (
                    <div className="space-y-4">
+                     {msg.answer.studentRecords && (
+                       <div className="border-b pb-3">
+                         <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary">
+                           <span>Individual student records</span>
+                           <span>{msg.answer.studentRecords.length} shown</span>
+                         </div>
+                         <div className="mt-2 space-y-2">
+                           {msg.answer.studentRecords.map((student) => (
+                             <div key={student.id} className="rounded-lg border bg-background/70 p-2.5">
+                               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                 <span className="text-xs font-semibold text-foreground">{student.name}</span>
+                                 <span className="font-mono text-[10px] text-muted-foreground">{student.id}</span>
+                                 <span className="text-[10px] text-muted-foreground">Grade {student.grade}</span>
+                               </div>
+                               <ul className="mt-1.5 space-y-1 text-[11px] text-muted-foreground">
+                                 {student.reasons.map((reason) => (
+                                   <li key={reason} className="flex gap-1.5">
+                                     <span className="text-primary">•</span><span>{reason}</span>
+                                   </li>
+                                 ))}
+                               </ul>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
                      <div>
-                       <div className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">Facts from synthetic data</div>
+                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">
+                         <span>Facts from synthetic data</span>
+                         <span className="text-muted-foreground">{SCHOOL_OPS_DATA_SOURCE.label}</span>
+                       </div>
                        <p>{msg.answer.facts}</p>
                      </div>
                      <div className="border-t pt-3">

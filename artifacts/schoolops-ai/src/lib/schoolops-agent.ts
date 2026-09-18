@@ -1,10 +1,51 @@
 import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
 
+export interface StudentEvidence {
+  id: string;
+  name: string;
+  grade: number;
+  reasons: string[];
+}
+
 export interface AgentAnswer {
   facts: string;
   evidence: string[];
   recommendation?: string;
   suggestedAction?: string;
+  studentRecords?: StudentEvidence[];
+}
+
+function studentReasons(student: typeof NORMALIZED_SCHOOL_DATA.students[number]) {
+  const reasons: string[] = [];
+  if (student.missingDocuments.length > 0) {
+    reasons.push(`Missing required document: ${student.missingDocuments.join(', ')}`);
+  }
+  if (student.attendanceRisk !== 'low') {
+    reasons.push(`${student.attendanceRate}% attendance (${student.attendanceRisk} risk; school historical baseline ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}%)`);
+  }
+  if (student.tuitionStatus !== 'current') {
+    reasons.push(`Account status: ${student.tuitionStatus.replace('_', ' ')}`);
+  }
+  if (student.enrollmentStatus !== 'active') {
+    reasons.push(`Enrollment status: ${student.enrollmentStatus}`);
+  }
+  return reasons.length ? reasons : ['No current exception flags'];
+}
+
+function toStudentEvidence(student: typeof NORMALIZED_SCHOOL_DATA.students[number]): StudentEvidence {
+  return {
+    id: student.id,
+    name: student.name,
+    grade: student.grade,
+    reasons: studentReasons(student),
+  };
+}
+
+function isStudentAttentionQuestion(question: string) {
+  return (
+    (question.includes('student') || question.includes('learner')) &&
+    (question.includes('attention') || question.includes('flag') || question.includes('concern') || question.includes('risk'))
+  );
 }
 
 function gradeFromQuestion(question: string) {
@@ -24,16 +65,20 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
     ? NORMALIZED_SCHOOL_DATA.students.filter((student) => student.grade === grade)
     : NORMALIZED_SCHOOL_DATA.students;
 
-  if (question.includes('document') || question.includes('tdap') || question.includes('physical')) {
+  if (question.includes('document') || question.includes('tdap') || question.includes('physical') || question.includes('immuniz') || question.includes('booster')) {
     const students = scopedStudents.filter((student) => student.missingDocuments.length > 0);
     const scope = grade ? `Grade ${grade}` : 'the synthetic directory';
     return {
       facts: `${students.length} student${students.length === 1 ? '' : 's'} in ${scope} have missing required documents.`,
       evidence: students.length
-        ? students.map((student) => `${student.id} · ${student.name}: ${student.missingDocuments.join(', ')}`)
+        ? students.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: missing ${student.missingDocuments.join(', ')}`)
         : [`No missing-document flags found among ${scopedStudents.length} matching synthetic records.`],
       recommendation: students.length ? 'Prioritize records with a compliance deadline, then request the specific missing item from each family.' : 'No document follow-up is recommended for this group.',
       suggestedAction: students.length ? `Draft document reminders for ${students.length} famil${students.length === 1 ? 'y' : 'ies'}` : undefined,
+      studentRecords: students.map((student) => ({
+        ...toStudentEvidence(student),
+        reasons: student.missingDocuments.map((document) => `Missing required document: ${document}`),
+      })),
     };
   }
 
@@ -70,6 +115,27 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
       evidence: atRisk.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${student.attendanceRate}% attendance (${student.attendanceRisk} risk)`),
       recommendation: 'Investigate the Grade 11 variance first, then review high-risk students for recurring absence patterns.',
       suggestedAction: 'Draft a check-in request for Grade 11 advisors',
+      studentRecords: atRisk.map((student) => ({
+        ...toStudentEvidence(student),
+        reasons: [
+          `${student.attendanceRate}% attendance (${student.attendanceRisk} risk)`,
+          `Compared with school historical baseline of ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}%`,
+        ],
+      })),
+    };
+  }
+
+  if (isStudentAttentionQuestion(question)) {
+    const flaggedStudents = scopedStudents.filter((student) => studentReasons(student)[0] !== 'No current exception flags');
+    return {
+      facts: `${flaggedStudents.length} matching student record${flaggedStudents.length === 1 ? '' : 's'} have one or more current attention flags in the normalized SchoolOps data.`,
+      evidence: [
+        ...flaggedStudents.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${studentReasons(student).join('; ')}`),
+        'Broader operational context is tracked separately in the attendance, admissions, and finance summaries.',
+      ],
+      recommendation: 'Review students with overlapping attendance, document, or account flags first, then route each follow-up through the appropriate school team.',
+      suggestedAction: flaggedStudents.length ? `Stage follow-up review for ${flaggedStudents.length} flagged student record${flaggedStudents.length === 1 ? '' : 's'}` : undefined,
+      studentRecords: flaggedStudents.map(toStudentEvidence),
     };
   }
 
@@ -95,6 +161,7 @@ export function answerSchoolOpsQuestion(rawQuestion: string): AgentAnswer {
       facts: `${scopedStudents.length} matching synthetic student records were found: ${highRisk} high attendance risk, ${missingDocs} with missing documents, and ${accountFlags} with account flags.`,
       evidence: scopedStudents.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${student.enrollmentStatus}; ${student.attendanceRate}% attendance`),
       recommendation: 'Review students with overlapping attendance, compliance, or account flags first.',
+      studentRecords: scopedStudents.map(toStudentEvidence),
     };
   }
 
