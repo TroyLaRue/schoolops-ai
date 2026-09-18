@@ -53,3 +53,263 @@ export const SendGmailDemoEmailResponse = zod.object({
 })
 
 
+/**
+ * Returns synthetic agent runs, findings, recommendations, approvals, dismissals, drafts, and completed actions.
+ * @summary Review persistent agent activity history
+ */
+export const GetActivityHistoryResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.number().int(),
+  "status": zod.enum(['running', 'completed', 'failed']),
+  "activityLog": zod.array(zod.string()),
+  "summary": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "issueCount": zod.number().int(),
+  "issues": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'attention', 'healthy']),
+  "evidence": zod.string(),
+  "impact": zod.string(),
+  "status": zod.enum(['open', 'resolved']),
+  "createdAt": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+}))
+}))
+})),
+  "actions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Persist a new agent run
+ */
+
+
+
+
+export const CreateAgentRunBody = zod.object({
+  "activityLog": zod.array(zod.string()),
+  "issues": zod.array(zod.object({
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'attention', 'healthy']),
+  "evidence": zod.string(),
+  "impact": zod.string(),
+  "actions": zod.array(zod.object({
+  "runId": zod.number().int().nullish(),
+  "issueId": zod.number().int().nullish(),
+  "sourceId": zod.string().min(1),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string().min(1),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed'])
+}))
+}))
+})
+
+export const CreateAgentRunResponse = zod.object({
+  "id": zod.number().int(),
+  "status": zod.enum(['running', 'completed', 'failed']),
+  "activityLog": zod.array(zod.string()),
+  "summary": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "issueCount": zod.number().int(),
+  "issues": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'attention', 'healthy']),
+  "evidence": zod.string(),
+  "impact": zod.string(),
+  "status": zod.enum(['open', 'resolved']),
+  "createdAt": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+}))
+}))
+})
+
+
+/**
+ * @summary Mark an agent run completed
+ */
+export const CompleteAgentRunParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const CompleteAgentRunResponse = zod.object({
+  "id": zod.number().int(),
+  "status": zod.enum(['running', 'completed', 'failed']),
+  "activityLog": zod.array(zod.string()),
+  "summary": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "issueCount": zod.number().int(),
+  "issues": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'attention', 'healthy']),
+  "evidence": zod.string(),
+  "impact": zod.string(),
+  "status": zod.enum(['open', 'resolved']),
+  "createdAt": zod.coerce.date(),
+  "actions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+}))
+}))
+})
+
+
+/**
+ * @summary Persist a standalone draft or recommended action
+ */
+
+
+
+
+export const CreateAgentActionBody = zod.object({
+  "runId": zod.number().int().nullish(),
+  "issueId": zod.number().int().nullish(),
+  "sourceId": zod.string().min(1),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string().min(1),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed'])
+})
+
+export const CreateAgentActionResponse = zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Approve, dismiss, or complete an action
+ */
+export const UpdateAgentActionParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateAgentActionBody = zod.object({
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed'])
+})
+
+export const UpdateAgentActionResponse = zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "issueId": zod.number().int().nullable(),
+  "type": zod.enum(['communication', 'task']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "content": zod.string().nullable(),
+  "recipient": zod.string().nullable(),
+  "subject": zod.string().nullable(),
+  "channel": zod.union([zod.literal('email'),zod.literal('sms'),zod.literal(null)]).nullable(),
+  "reason": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'dismissed', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "dismissedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+

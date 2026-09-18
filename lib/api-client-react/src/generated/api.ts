@@ -20,6 +20,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActivityHistory,
+  AgentAction,
+  AgentActionInput,
+  AgentActionUpdate,
+  AgentRun,
+  AgentRunInput,
   GmailDemoEmailInput,
   GmailSendResult,
   GmailStatus,
@@ -296,5 +302,422 @@ export const useSendGmailDemoEmail = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSendGmailDemoEmailMutationOptions(options));
+    }
+
+export const getGetActivityHistoryUrl = () => {
+
+
+
+
+  return `/api/history`
+}
+
+/**
+ * Returns synthetic agent runs, findings, recommendations, approvals, dismissals, drafts, and completed actions.
+ * @summary Review persistent agent activity history
+ */
+export const getActivityHistory = async ( options?: Parameters<typeof customFetch>[1]): Promise<ActivityHistory> => {
+
+  return customFetch<ActivityHistory>(getGetActivityHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivityHistoryQueryKey = () => {
+    return [
+    `/api/history`
+    ] as const;
+    }
+
+
+export const getGetActivityHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getActivityHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivityHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivityHistory>>> = ({ signal }) => getActivityHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivityHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getActivityHistory>>>
+export type GetActivityHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Review persistent agent activity history
+ */
+
+export function useGetActivityHistory<TData = Awaited<ReturnType<typeof getActivityHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivityHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivityHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAgentRunUrl = () => {
+
+
+
+
+  return `/api/agent-runs`
+}
+
+/**
+ * @summary Persist a new agent run
+ */
+export const createAgentRun = async (agentRunInput: AgentRunInput, options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgentRun>(getCreateAgentRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agentRunInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAgentRunMutationKey = () => ['createAgentRun'] as const;
+
+export const getCreateAgentRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentRun>>, TError,CreateAgentRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgentRun>>, TError,CreateAgentRunMutationVariables, TContext> => {
+
+const mutationKey = getCreateAgentRunMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgentRun>>, CreateAgentRunMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAgentRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgentRunMutationResult = NonNullable<Awaited<ReturnType<typeof createAgentRun>>>
+    export type CreateAgentRunMutationBody = BodyType<AgentRunInput>
+    export type CreateAgentRunMutationError = ErrorType<unknown>
+    export type CreateAgentRunMutationVariables = {data: BodyType<AgentRunInput>}
+
+    /**
+ * @summary Persist a new agent run
+ */
+export const useCreateAgentRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentRun>>, TError,CreateAgentRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgentRun>>,
+        TError,
+        CreateAgentRunMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAgentRunMutationOptions(options));
+    }
+
+export const getCompleteAgentRunUrl = (id: number,) => {
+
+
+
+
+  return `/api/agent-runs/${id}/complete`
+}
+
+/**
+ * @summary Mark an agent run completed
+ */
+export const completeAgentRun = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
+
+  return customFetch<AgentRun>(getCompleteAgentRunUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteAgentRunMutationKey = () => ['completeAgentRun'] as const;
+
+export const getCompleteAgentRunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAgentRun>>, TError,CompleteAgentRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeAgentRun>>, TError,CompleteAgentRunMutationVariables, TContext> => {
+
+const mutationKey = getCompleteAgentRunMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeAgentRun>>, CompleteAgentRunMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeAgentRun(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteAgentRunMutationResult = NonNullable<Awaited<ReturnType<typeof completeAgentRun>>>
+
+    export type CompleteAgentRunMutationError = ErrorType<void>
+    export type CompleteAgentRunMutationVariables = {id: number}
+
+    /**
+ * @summary Mark an agent run completed
+ */
+export const useCompleteAgentRun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAgentRun>>, TError,CompleteAgentRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeAgentRun>>,
+        TError,
+        CompleteAgentRunMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteAgentRunMutationOptions(options));
+    }
+
+export const getCreateAgentActionUrl = () => {
+
+
+
+
+  return `/api/actions`
+}
+
+/**
+ * @summary Persist a standalone draft or recommended action
+ */
+export const createAgentAction = async (agentActionInput: AgentActionInput, options?: Parameters<typeof customFetch>[1]): Promise<AgentAction> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgentAction>(getCreateAgentActionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agentActionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAgentActionMutationKey = () => ['createAgentAction'] as const;
+
+export const getCreateAgentActionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentAction>>, TError,CreateAgentActionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgentAction>>, TError,CreateAgentActionMutationVariables, TContext> => {
+
+const mutationKey = getCreateAgentActionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgentAction>>, CreateAgentActionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAgentAction(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgentActionMutationResult = NonNullable<Awaited<ReturnType<typeof createAgentAction>>>
+    export type CreateAgentActionMutationBody = BodyType<AgentActionInput>
+    export type CreateAgentActionMutationError = ErrorType<unknown>
+    export type CreateAgentActionMutationVariables = {data: BodyType<AgentActionInput>}
+
+    /**
+ * @summary Persist a standalone draft or recommended action
+ */
+export const useCreateAgentAction = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentAction>>, TError,CreateAgentActionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgentAction>>,
+        TError,
+        CreateAgentActionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAgentActionMutationOptions(options));
+    }
+
+export const getUpdateAgentActionUrl = (id: number,) => {
+
+
+
+
+  return `/api/actions/${id}`
+}
+
+/**
+ * @summary Approve, dismiss, or complete an action
+ */
+export const updateAgentAction = async (id: number,
+    agentActionUpdate: AgentActionUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AgentAction> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgentAction>(getUpdateAgentActionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(agentActionUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAgentActionMutationKey = () => ['updateAgentAction'] as const;
+
+export const getUpdateAgentActionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentAction>>, TError,UpdateAgentActionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAgentAction>>, TError,UpdateAgentActionMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAgentActionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAgentAction>>, UpdateAgentActionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAgentAction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAgentActionMutationResult = NonNullable<Awaited<ReturnType<typeof updateAgentAction>>>
+    export type UpdateAgentActionMutationBody = BodyType<AgentActionUpdate>
+    export type UpdateAgentActionMutationError = ErrorType<void>
+    export type UpdateAgentActionMutationVariables = {id: number;data: BodyType<AgentActionUpdate>}
+
+    /**
+ * @summary Approve, dismiss, or complete an action
+ */
+export const useUpdateAgentAction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentAction>>, TError,UpdateAgentActionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAgentAction>>,
+        TError,
+        UpdateAgentActionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAgentActionMutationOptions(options));
     }
 

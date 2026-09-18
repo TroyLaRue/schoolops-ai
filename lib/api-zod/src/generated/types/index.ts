@@ -6,6 +6,23 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activityHistory';
+export * from './agentAction';
+export * from './agentActionChannel';
+export * from './agentActionInput';
+export * from './agentActionInputChannel';
+export * from './agentActionInputType';
+export * from './agentActionStatus';
+export * from './agentActionType';
+export * from './agentActionUpdate';
+export * from './agentIssue';
+export * from './agentIssueInput';
+export * from './agentIssueInputSeverity';
+export * from './agentIssueSeverity';
+export * from './agentIssueStatus';
+export * from './agentRun';
+export * from './agentRunInput';
+export * from './agentRunStatus';
 export * from './gmailDemoEmailInput';
 export * from './gmailSendResult';
 export * from './gmailStatus';

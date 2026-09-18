@@ -37,3 +37,189 @@ export interface GmailSendResult {
   recipientLabel: string;
 }
 
+export type AgentActionStatus = typeof AgentActionStatus[keyof typeof AgentActionStatus];
+
+
+export const AgentActionStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  dismissed: 'dismissed',
+  completed: 'completed',
+} as const;
+
+export type AgentRunStatus = typeof AgentRunStatus[keyof typeof AgentRunStatus];
+
+
+export const AgentRunStatus = {
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export type AgentActionType = typeof AgentActionType[keyof typeof AgentActionType];
+
+
+export const AgentActionType = {
+  communication: 'communication',
+  task: 'task',
+} as const;
+
+/**
+ * @nullable
+ */
+export type AgentActionChannel = typeof AgentActionChannel[keyof typeof AgentActionChannel] | null;
+
+
+export const AgentActionChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface AgentAction {
+  id: number;
+  sourceId: string;
+  /** @nullable */
+  issueId: number | null;
+  type: AgentActionType;
+  title: string;
+  description: string;
+  /** @nullable */
+  content: string | null;
+  /** @nullable */
+  recipient: string | null;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  channel: AgentActionChannel;
+  /** @nullable */
+  reason: string | null;
+  status: AgentActionStatus;
+  createdAt: string;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  dismissedAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type AgentIssueSeverity = typeof AgentIssueSeverity[keyof typeof AgentIssueSeverity];
+
+
+export const AgentIssueSeverity = {
+  critical: 'critical',
+  attention: 'attention',
+  healthy: 'healthy',
+} as const;
+
+export type AgentIssueStatus = typeof AgentIssueStatus[keyof typeof AgentIssueStatus];
+
+
+export const AgentIssueStatus = {
+  open: 'open',
+  resolved: 'resolved',
+} as const;
+
+export interface AgentIssue {
+  id: number;
+  sourceId: string;
+  title: string;
+  category: string;
+  severity: AgentIssueSeverity;
+  evidence: string;
+  impact: string;
+  status: AgentIssueStatus;
+  createdAt: string;
+  actions: AgentAction[];
+}
+
+export interface AgentRun {
+  id: number;
+  status: AgentRunStatus;
+  activityLog: string[];
+  /** @nullable */
+  summary: string | null;
+  startedAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  issueCount: number;
+  issues: AgentIssue[];
+}
+
+export type AgentActionInputType = typeof AgentActionInputType[keyof typeof AgentActionInputType];
+
+
+export const AgentActionInputType = {
+  communication: 'communication',
+  task: 'task',
+} as const;
+
+/**
+ * @nullable
+ */
+export type AgentActionInputChannel = typeof AgentActionInputChannel[keyof typeof AgentActionInputChannel] | null;
+
+
+export const AgentActionInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface AgentActionInput {
+  /** @nullable */
+  runId?: number | null;
+  /** @nullable */
+  issueId?: number | null;
+  /** @minLength 1 */
+  sourceId: string;
+  type: AgentActionInputType;
+  /** @minLength 1 */
+  title: string;
+  description: string;
+  /** @nullable */
+  content: string | null;
+  /** @nullable */
+  recipient: string | null;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  channel: AgentActionInputChannel;
+  /** @nullable */
+  reason: string | null;
+  status: AgentActionStatus;
+}
+
+export interface AgentActionUpdate {
+  status: AgentActionStatus;
+}
+
+export type AgentIssueInputSeverity = typeof AgentIssueInputSeverity[keyof typeof AgentIssueInputSeverity];
+
+
+export const AgentIssueInputSeverity = {
+  critical: 'critical',
+  attention: 'attention',
+  healthy: 'healthy',
+} as const;
+
+export interface AgentIssueInput {
+  sourceId: string;
+  title: string;
+  category: string;
+  severity: AgentIssueInputSeverity;
+  evidence: string;
+  impact: string;
+  actions: AgentActionInput[];
+}
+
+export interface AgentRunInput {
+  activityLog: string[];
+  issues: AgentIssueInput[];
+}
+
+export interface ActivityHistory {
+  runs: AgentRun[];
+  actions: AgentAction[];
+}
+
