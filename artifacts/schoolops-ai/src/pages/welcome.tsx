@@ -6,7 +6,7 @@ export default function Welcome() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10">
         <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight"><img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" className="h-10 w-10 rounded-xl" /> SchoolOps AI</Link>
-        <nav className="flex items-center gap-2 text-sm font-medium sm:gap-3"><Link href="/demo" data-testid="link-try-demo-header" className="rounded-md px-3 py-2 text-primary hover:bg-accent">Try Demo</Link><Link href="/sign-in" className="rounded-md px-3 py-2 hover:bg-accent">Sign in</Link><Link href="/sign-up" className="hidden rounded-md bg-primary px-4 py-2.5 text-primary-foreground hover:bg-primary/90 sm:inline-flex">Get started</Link></nav>
+        <nav className="flex items-center gap-2 text-sm font-medium sm:gap-3"><Link href="/case-study" data-testid="link-case-study-header" className="rounded-md px-3 py-2 text-primary hover:bg-accent">Case study</Link><Link href="/demo" data-testid="link-try-demo-header" className="rounded-md px-3 py-2 text-primary hover:bg-accent">Try Demo</Link><Link href="/sign-in" className="rounded-md px-3 py-2 hover:bg-accent">Sign in</Link><Link href="/sign-up" className="hidden rounded-md bg-primary px-4 py-2.5 text-primary-foreground hover:bg-primary/90 sm:inline-flex">Get started</Link></nav>
       </header>
       <main>
         <section className="mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-16 md:grid-cols-[1.1fr_.9fr] md:items-center md:px-10 md:pb-32 md:pt-28">

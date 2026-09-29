@@ -6,6 +6,8 @@
 
 ![Public six-step walkthrough, showing synthetic-only and no-sign-in disclosures](docs/screenshots/demo-walkthrough.jpg)
 
+For a concise, recruiter-friendly overview, see the [portfolio case study](docs/case-study.md), or open `/case-study` in the running app.
+
 ## What it does
 
 | Area | Implemented behavior |
