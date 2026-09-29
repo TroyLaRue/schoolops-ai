@@ -48,6 +48,23 @@ Browser
 
 The application uses integration-shaped inputs that normalize synthetic operational records into school context before evaluation. The Smartcare-shaped mapping illustrates this boundary; it is **not** a working vendor adapter. The `/api` service and the web app share the Replit path router; `/api/__clerk` is the auth proxy. Authenticated school routes require membership; public `/demo` makes no school API calls.
 
+### Tenant and decision boundaries
+
+- Clerk identifies the signed-in user; the API resolves that user's membership in the **active school** before accessing school operations, policies, history, or connectors. School switching is restricted to the user's memberships. Admin-only management actions and external side effects have additional role checks. The public walkthrough never chooses an active school.
+- Ask SchoolOps grounds answers in the active school's synthetic operational facts and matched policy sections. Citations refer to the retrieved example text; if no matching policy is available, a general suggestion is **not** represented as policy authority.
+- Approval is separate from execution. A stored, approved proposal is checked again on the server before a demo-safe Gmail or Calendar action. Public-demo approval is local state only and cannot authorize an API side effect. These are safeguards in a prototype, not a certification for handling real student records.
+
+### Repository map
+
+| Path | Purpose |
+| --- | --- |
+| `artifacts/schoolops-ai/` | Web app and the public, browser-local walkthrough |
+| `artifacts/api-server/` | School-scoped API, authentication, history, policies, and gated test connectors |
+| `lib/db/` | PostgreSQL/Drizzle models and data access |
+| `lib/api-spec/`, `lib/api-zod/`, `lib/api-client-react/` | OpenAPI contract and generated validation/client code |
+| `artifacts/mockup-sandbox/` | Design preview workspace, not a SchoolOps production service |
+| `docs/screenshots/` | Synthetic public-demo screenshot for this README |
+
 ## End-to-end reviewer workflow
 
 1. **Observe:** An attendance pattern is flagged from synthetic operations data. The app does not infer a cause from the count alone.
@@ -68,7 +85,7 @@ To inspect the authenticated workspace instead, sign in, join or create a school
 This is a **pnpm monorepo designed for a Replit workspace** with managed artifact workflows and path routing. A standalone local clone needs its own PostgreSQL, Clerk setup, and compatible reverse proxy for `/api`, `/api/__clerk`, and the web app; running only Vite is not a full-stack setup.
 
 1. Use Node.js 24 and pnpm. Install with `pnpm install --frozen-lockfile`.
-2. Provision a PostgreSQL database and a Clerk tenant. In Replit, use the database and managed Clerk/Auth setup. Add required credentials through **Replit Secrets**, never a committed file. See [`.env.example`](.env.example) for **names only**; leave its values empty. The publishable key is public configuration, but the secret key and database URL are not.
+2. Provision a PostgreSQL database and a Clerk tenant. In Replit, use the database and managed Clerk/Auth setup. Add required credentials through **Replit Secrets**, never a committed file. [`.env.example`](.env.example) contains deliberately unusable placeholder values; replace them only in your environment, not in Git. The publishable key is public configuration, but the secret key and database URL are not.
 3. For a new **development** database only, run `pnpm --filter @workspace/db run push`. Do not point this command at production or an existing database without reviewing the migration impact.
 4. Start the managed **API Server** (`artifacts/api-server: API Server`) and **web** (`artifacts/schoolops-ai: web`) workflows in Replit. They supply their own `PORT` and web `BASE_PATH`; do not run `pnpm dev` from the repository root. Open the web preview at `/`, and `/demo` for the guest walkthrough.
 5. Check the project with `pnpm run typecheck` and `pnpm --filter @workspace/schoolops-ai run test`. To rebuild the API contract clients after changing `lib/api-spec/`, run `pnpm --filter @workspace/api-spec run codegen`.
@@ -86,7 +103,7 @@ This is a **pnpm monorepo designed for a Replit workspace** with managed artifac
 
 ## Data and sharing boundaries
 
-- Sample school/student names, attendance entries, and policies are invented. `artifacts/api-server/src/lib/synthetic-schools.ts` and demo policy seeds are examples, **not real SIS exports**. The public walkthrough lives in `artifacts/schoolops-ai/src/pages/demo.tsx` and stores its state in `sessionStorage`, not the school database.
+- Sample school/student names, attendance entries, policy text, and seeded history narratives are invented. `artifacts/api-server/src/lib/synthetic-schools.ts` and demo policy/history seeds are examples, **not real SIS exports, legal/medical guidance, or verified outcome statistics**. The public walkthrough lives in `artifacts/schoolops-ai/src/pages/demo.tsx` and stores its state in `sessionStorage`, not the school database.
 - `artifacts/mockup-sandbox/` and `.agents/memory/` are workspace/design and agent-maintenance materials, **not product features or deployment instructions**. `replit.md` is collaborator guidance; this README is the public-facing source of truth.
 - `.env*` (except `.env.example`), credentials, key material, local databases, and generated outputs are ignored. No real OAuth credentials or student data should be added. **Before publishing a fork, review the full Git history as well as the current files**; ignore rules cannot remove secrets that were committed previously.
 
@@ -98,3 +115,7 @@ This is a **pnpm monorepo designed for a Replit workspace** with managed artifac
 4. Broader document-ingestion and connector coverage after those trust boundaries are established.
 
 These are planned directions, not shipped integrations or claims of production readiness.
+
+## Licensing
+
+No license has been selected for this project's original code. Public visibility alone does not grant permission to reuse it. Dependencies and generated components retain their own respective licenses; review those separately before redistribution.

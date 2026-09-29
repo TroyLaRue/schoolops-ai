@@ -55,6 +55,14 @@ Thumbs.db
 **/.env
 **/.env.*
 !**/.env.example
+*.env
+*.env.*
+!*.env.example
+.envrc
+.envrc.*
+.secrets/
+secrets/
+**/secrets/
 *.pem
 *.key
 *.p8
@@ -63,12 +71,30 @@ Thumbs.db
 *.jks
 *.keystore
 credentials.json
+*credentials*.json
 service-account*.json
+*token*.json
+*oauth*.json
+id_rsa*
+id_ed25519*
 
 # Local runtime data, test output, and logs
 *.sqlite
 *.sqlite3
 *.db
+*.dump
+*.backup
+*.bak
 *.log
 test-results/
 playwright-report/
+
+# Local school exports and uploads; review and explicitly add synthetic fixtures only
+uploads/
+exports/
+backups/
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.ods
