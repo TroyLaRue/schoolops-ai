@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
-import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check, Badge } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
+import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check, BookOpen } from 'lucide-react';
 import { AgentAnswer, answerSchoolOpsQuestion } from '@/lib/schoolops-agent';
 import { SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
 import { cn } from '@/lib/utils';
 import { useListPolicyDocuments } from '@workspace/api-client-react';
-import { BookOpen } from 'lucide-react';
 
 interface Message {
   id: string;

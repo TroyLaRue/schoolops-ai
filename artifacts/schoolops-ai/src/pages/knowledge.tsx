@@ -1,10 +1,13 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Sidebar } from '@/components/layout/shell';
 import { 
-  Badge, Button, Card, CardContent, CardHeader, CardTitle, 
-  Input, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-  Label, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+  Badge, Button, Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   useListPolicyDocuments, 
   useCreatePolicyDocument, 
