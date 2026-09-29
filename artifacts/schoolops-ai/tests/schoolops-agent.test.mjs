@@ -105,9 +105,11 @@ test('numbered uploaded sections outrank built-in policies on specific threshold
     'What does the policy say about attendance below 85%?',
     'What happens when attendance falls below 85%?',
     'What happens after three consecutive unexcused absences?',
+    'Which attendance threshold makes a student high priority?',
   ]) {
     const answer = answerSchoolOpsQuestion(question, docs);
-    assert.match(answer.facts, /85% or 3 consecutive unexcused absences/);
+    assert.equal(answer.facts, 'Below 85% attendance or 3 consecutive unexcused absences.');
+    assert.match(answer.citations?.[0].quote, /Attendance below 85% or 3 consecutive unexcused absences/);
     assert.equal(answer.citations?.[0].sourceId, uploaded.sourceId);
     assert.equal(answer.citations?.[0].filename, uploaded.filename);
     assert.equal(answer.citations?.[0].policyId, 'POL-ATT-101');
@@ -126,6 +128,12 @@ test('section matching works across document categories without fabricating poli
   assert.equal(builtIn.section, 'Section 2. Daily attendance review');
 });
 
+test('90 percent attention questions do not receive the 85 percent high-priority answer', () => {
+  const answer = answerSchoolOpsQuestion('What is the 90% attendance attention threshold?', [uploaded]);
+  assert.equal(answer.facts, 'Attendance below 90% triggers an attention flag for staff review.');
+  assert.equal(answer.citations?.[0].policyId, 'POL-ATT-101');
+});
+
 test('archived sections and unrelated questions return no policy citation', () => {
   const archived = { ...uploaded, status: 'archived' };
   assert.deepEqual(searchPolicySections('attendance below 85%', [archived]), []);
@@ -133,6 +141,13 @@ test('archived sections and unrelated questions return no policy citation', () =
   assert.equal(answer.citations, undefined);
   assert.match(answer.facts, /could not find an active policy section/i);
   assert.equal(answer.recommendationBasis, 'general-suggestion');
+});
+
+test('answers do not invent a policy ID when the source has none', () => {
+  const answer = answerSchoolOpsQuestion('What is the daily attendance review policy?', DEMO_POLICY_DOCUMENTS);
+  assert.ok(answer.facts.length <= 240);
+  assert.equal(answer.citations[0].policyId, undefined);
+  assert.equal(answer.citations[0].sourceId, 'POL-ATT-2026');
 });
 
 test('attendance statistics remain operational answers', () => {

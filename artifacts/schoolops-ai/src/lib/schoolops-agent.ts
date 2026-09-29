@@ -67,6 +67,33 @@ function gradeFromQuestion(question: string) {
   return Object.entries(words).find(([word]) => question.toLowerCase().includes(word))?.[1];
 }
 
+function concisePolicyAnswer(question: string, citation: PolicyCitation): string {
+  const highPriority = citation.quote.match(/\bHigh priority:\s*Attendance below (\d+)% or (\d+) consecutive unexcused absences\b/i);
+  if (highPriority && /\b(attendance|absence|absences|unexcused)\b/i.test(question)
+    && /\b(high priority|consecutive|unexcused|85)\b/i.test(question)) {
+    return `Below ${highPriority[1]}% attendance or ${highPriority[2]} consecutive unexcused absences.`;
+  }
+
+  const attention = citation.quote.match(/\bAttention:\s*Attendance below (\d+)%/i);
+  if (attention && /\b(attendance|absence)\b/i.test(question) && /\b(90|attention|threshold)\b/i.test(question)) {
+    return `Attendance below ${attention[1]}% triggers an attention flag for staff review.`;
+  }
+
+  const text = citation.quote
+    .replace(/\bPolicy ID:\s*[A-Z][A-Z0-9-]+\s*/gi, '')
+    .split(/\bExample policy-grounded answer:/i)[0];
+  const sentences = text.split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
+  const terms = question.toLowerCase().match(/[a-z]{4,}|\d+/g)?.filter((term) =>
+    !['what', 'which', 'when', 'does', 'about', 'policy', 'school', 'student', 'students', 'should', 'section'].includes(term)) ?? [];
+  const ranked = sentences.map((sentence, index) => ({
+    sentence,
+    index,
+    score: terms.filter((term) => sentence.toLowerCase().includes(term)).length,
+  })).sort((a, b) => b.score - a.score || a.index - b.index);
+  const match = ranked[0]?.sentence ?? '';
+  return match.length > 240 ? `${match.slice(0, 237).trimEnd()}…` : match;
+}
+
 export function answerSchoolOpsQuestion(
   rawQuestion: string,
   policyDocuments: PolicyDocumentLike[] = DEMO_POLICY_DOCUMENTS,
@@ -97,7 +124,7 @@ export function answerSchoolOpsQuestion(
       };
     }
     return {
-      facts: citations[0].quote,
+      facts: concisePolicyAnswer(question, citations[0]),
       evidence: [`Policy source: ${citations[0].title}, ${citations[0].section}${citations[0].policyId ? ` (${citations[0].policyId})` : ''}.`],
       recommendation: 'Use this policy as reviewed context, then verify the underlying operational record before approving any action.',
       citations,

@@ -6,6 +6,11 @@ import { SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
 import { cn } from '@/lib/utils';
 import { useListPolicyDocuments } from '@workspace/api-client-react';
 
+function citationLabel(section: string) {
+  const number = section.match(/^(?:Section\s+)?(\d+(?:\.\d+)*)\./i);
+  return number ? `Section ${number[1]}` : section;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'agent';
@@ -83,91 +88,94 @@ export function ChatWidget() {
                   : "bg-card text-foreground rounded-tl-sm border border-border")}>
                  {msg.content}
                  {msg.answer && (
-                   <div className="space-y-4">
-                     {msg.answer.studentRecords && (
-                       <div className="border-b pb-3">
-                         <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary">
-                           <span>Individual student records</span>
-                           <span>{msg.answer.studentRecords.length} shown</span>
-                         </div>
-                         <div className="mt-2 space-y-2">
-                           {msg.answer.studentRecords.map((student) => (
-                             <div key={student.id} className="rounded-lg border bg-background/70 p-2.5">
-                               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                 <span className="text-xs font-semibold text-foreground">{student.name}</span>
-                                 <span className="font-mono text-[10px] text-muted-foreground">{student.id}</span>
-                                 <span className="text-[10px] text-muted-foreground">Grade {student.grade}</span>
-                               </div>
-                               <ul className="mt-1.5 space-y-1 text-[11px] text-muted-foreground">
-                                 {student.reasons.map((reason) => (
-                                   <li key={reason} className="flex gap-1.5">
-                                     <span className="text-primary">•</span><span>{reason}</span>
-                                   </li>
-                                 ))}
-                               </ul>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                     <div>
-                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">
-                         <span>Facts from synthetic data</span>
-                         <span className="text-muted-foreground">{SCHOOL_OPS_DATA_SOURCE.label}</span>
-                       </div>
-                       <p>{msg.answer.facts}</p>
-                     </div>
-                     <div className="border-t pt-3">
-                       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                         <Database className="h-3 w-3" /> Supporting evidence
-                       </div>
-                       <ul className="space-y-1.5 text-xs text-muted-foreground">
-                         {msg.answer.evidence.slice(0, 6).map((item) => (
-                           <li key={item} className="flex gap-2">
-                             <span className="text-primary">•</span><span>{item}</span>
-                           </li>
-                         ))}
-                       </ul>
-                     </div>
-                     {msg.answer.citations && msg.answer.citations.length > 0 && (
-                       <div className="border-t pt-3 mt-3">
-                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                           <BookOpen className="h-3 w-3" /> Policy Context
-                         </div>
-                         <div className="space-y-3">
-                           {msg.answer.citations.map((citation) => (
-                             <div key={citation.id} className="rounded-md border bg-background/50 p-2.5 shadow-sm">
-                               <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                 <span className="text-xs font-semibold text-foreground">{citation.title}</span>
-                                 <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono bg-background">{citation.sourceKind}</Badge>
-                               </div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">
+                          <span>Answer</span>
+                          <span className="text-muted-foreground">{SCHOOL_OPS_DATA_SOURCE.label}</span>
+                        </div>
+                        <p>{msg.answer.facts}</p>
+                        {msg.answer.citations && msg.answer.citations.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {msg.answer.citations.map((citation) => (
+                              <p key={citation.id} className="text-[11px] leading-snug text-muted-foreground">
+                                <BookOpen className="inline h-3 w-3 mr-1 align-[-2px]" />
+                                Source: <span className="font-mono font-semibold text-foreground">{citation.policyId ?? citation.sourceId}</span>, {citationLabel(citation.section)}
+                                {' · '}{citation.filename ?? citation.title}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {msg.answer.recommendation && (
+                        <details className="group border-t pt-2">
+                          <summary className="cursor-pointer select-none text-xs font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
+                            <Lightbulb className="inline h-3.5 w-3.5 mr-1.5 align-[-2px]" />Why?
+                          </summary>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {msg.answer.recommendationBasis && (
+                              <Badge variant="outline" className="mb-2 text-[10px]">
+                                {msg.answer.recommendationBasis === 'policy-grounded' ? 'Policy-grounded' : 'General suggestion'}
+                              </Badge>
+                            )}
+                            <p>{msg.answer.recommendation}</p>
+                          </div>
+                        </details>
+                      )}
+
+                      {(msg.answer.evidence.length > 0 || (msg.answer.studentRecords?.length ?? 0) > 0) && (
+                        <details className="border-t pt-2">
+                          <summary className="cursor-pointer select-none text-xs font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
+                            <Database className="inline h-3.5 w-3.5 mr-1.5 align-[-2px]" />Evidence
+                            {msg.answer.studentRecords && <span className="ml-1 font-normal text-muted-foreground">({msg.answer.studentRecords.length} student records)</span>}
+                          </summary>
+                          <div className="mt-2 space-y-3">
+                            {msg.answer.studentRecords && (
+                              <div className="space-y-2">
+                                {msg.answer.studentRecords.map((student) => (
+                                  <div key={student.id} className="rounded-lg border bg-background/70 p-2.5">
+                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                      <span className="text-xs font-semibold text-foreground">{student.name}</span>
+                                      <span className="font-mono text-[10px] text-muted-foreground">{student.id}</span>
+                                      <span className="text-[10px] text-muted-foreground">Grade {student.grade}</span>
+                                    </div>
+                                    <ul className="mt-1.5 space-y-1 text-[11px] text-muted-foreground">
+                                      {student.reasons.map((reason) => <li key={reason}>• {reason}</li>)}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <ul className="space-y-1.5 text-xs text-muted-foreground">
+                              {msg.answer.evidence.map((item, index) => <li key={`${index}-${item}`}>• {item}</li>)}
+                            </ul>
+                          </div>
+                        </details>
+                      )}
+
+                      {msg.answer.citations && msg.answer.citations.length > 0 && (
+                        <details className="border-t pt-2">
+                          <summary className="cursor-pointer select-none text-xs font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
+                            <BookOpen className="inline h-3.5 w-3.5 mr-1.5 align-[-2px]" />Policy source
+                          </summary>
+                          <div className="mt-2 space-y-3">
+                            {msg.answer.citations.map((citation) => (
+                              <div key={citation.id} className="rounded-md border bg-background/50 p-2.5 shadow-sm">
+                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                  <span className="text-xs font-semibold text-foreground">{citation.title}</span>
+                                  <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono bg-background">{citation.sourceKind}</Badge>
+                                </div>
                                 {citation.filename && <div className="text-[10px] text-muted-foreground mb-1 break-all">{citation.filename}</div>}
-                                <div className="text-[10px] text-muted-foreground font-mono mb-1.5">{citation.section}{citation.policyId ? ` · ${citation.policyId}` : ''} · v{citation.version}</div>
-                               <div className="text-[11px] italic text-muted-foreground border-l-2 pl-2 border-primary/20">"{citation.quote}"</div>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                     
-                     {msg.answer.recommendation && (
-                       <div className="border-t pt-3 mt-3">
-                         <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-start sm:justify-between text-[10px] font-bold uppercase tracking-wider">
-                           <div className="flex items-center gap-1.5 text-muted-foreground mt-1">
-                              <Lightbulb className="h-3 w-3" /> Recommendation
-                           </div>
-                           {msg.answer.recommendationBasis && (
-                             <span className={cn(
-                               "px-1.5 py-0.5 rounded-sm border shrink-0",
-                               msg.answer.recommendationBasis === 'policy-grounded' ? "bg-success/10 text-success border-success/20" : "bg-muted text-muted-foreground border-border"
-                             )}>
-                               {msg.answer.recommendationBasis === 'policy-grounded' ? 'Policy-grounded' : 'General AI Suggestion'}
-                             </span>
-                           )}
-                         </div>
-                         <p className="text-xs text-muted-foreground">{msg.answer.recommendation}</p>
-                       </div>
-                     )}
+                                <div className="text-[10px] text-muted-foreground font-mono mb-1.5">
+                                  {citation.section}{citation.policyId ? ` · ${citation.policyId}` : ''} · {citation.sourceId} · v{citation.version}
+                                </div>
+                                <blockquote className="text-[11px] italic text-muted-foreground border-l-2 pl-2 border-primary/20 whitespace-pre-wrap">"{citation.quote}"</blockquote>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
                      {msg.answer.suggestedAction && (
                        <button
                          onClick={() => setStagedActions((actions) =>
