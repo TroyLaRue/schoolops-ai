@@ -7,6 +7,7 @@ import {
   Braces,
   CalendarDays,
   Check,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -260,6 +261,29 @@ export default function Integrations() {
                       <div><span className="text-primary">mode</span>: synthetic_only</div>
                     </div>
                   )}
+                </IntegrationCard>
+
+                <IntegrationCard
+                  name="Knowledge Base"
+                  description="Demo policy library with user-added synthetic text/Markdown."
+                  status="demo"
+                  icon={<BookOpen className="h-5 w-5" />}
+                  tone="amber"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      Provides policy basis for agent answers
+                    </div>
+                    <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
+                      <div className="flex gap-2.5">
+                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />
+                        <p className="text-xs leading-5 text-muted-foreground">
+                          No real docs unless deliberately uploaded. Binary PDF processing and live vendor access are not supported in this demo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </IntegrationCard>
 
                 <IntegrationCard

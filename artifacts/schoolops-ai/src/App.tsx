@@ -11,6 +11,7 @@ import Communications from '@/pages/communications';
 import Settings from '@/pages/settings';
 import HistoryPage from '@/pages/history';
 import Integrations from '@/pages/integrations';
+import Knowledge from '@/pages/knowledge';
 import {
   Route,
   Switch,
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/students/:studentId" component={StudentDetail} />
         <Route path="/communications" component={Communications} />
         <Route path="/history" component={HistoryPage} />
+        <Route path="/knowledge" component={Knowledge} />
         <Route path="/integrations" component={Integrations} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />

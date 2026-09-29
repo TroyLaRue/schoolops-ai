@@ -57,6 +57,135 @@ export interface CalendarFollowUpResult {
   completedAt: string;
 }
 
+export type PolicyDocumentCategory = typeof PolicyDocumentCategory[keyof typeof PolicyDocumentCategory];
+
+
+export const PolicyDocumentCategory = {
+  handbook: 'handbook',
+  attendance: 'attendance',
+  enrollment: 'enrollment',
+  tuition: 'tuition',
+  procedure: 'procedure',
+} as const;
+
+export type PolicyDocumentStatus = typeof PolicyDocumentStatus[keyof typeof PolicyDocumentStatus];
+
+
+export const PolicyDocumentStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export type PolicyDocumentSourceKind = typeof PolicyDocumentSourceKind[keyof typeof PolicyDocumentSourceKind];
+
+
+export const PolicyDocumentSourceKind = {
+  demo: 'demo',
+  uploaded: 'uploaded',
+} as const;
+
+export type PolicyDocumentMimeType = typeof PolicyDocumentMimeType[keyof typeof PolicyDocumentMimeType];
+
+
+export const PolicyDocumentMimeType = {
+  'text/plain': 'text/plain',
+  'text/markdown': 'text/markdown',
+} as const;
+
+export interface PolicyDocument {
+  id: number;
+  sourceId: string;
+  title: string;
+  category: PolicyDocumentCategory;
+  description: string;
+  /** @nullable */
+  filename: string | null;
+  mimeType: PolicyDocumentMimeType;
+  content: string;
+  version: string;
+  /** @nullable */
+  effectiveDate: string | null;
+  status: PolicyDocumentStatus;
+  sourceKind: PolicyDocumentSourceKind;
+  syntheticOnly: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PolicyDocumentInputMimeType = typeof PolicyDocumentInputMimeType[keyof typeof PolicyDocumentInputMimeType];
+
+
+export const PolicyDocumentInputMimeType = {
+  'text/plain': 'text/plain',
+  'text/markdown': 'text/markdown',
+} as const;
+
+export interface PolicyDocumentInput {
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  title: string;
+  category: PolicyDocumentCategory;
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  description: string;
+  /**
+     * @maxLength 180
+     * @nullable
+     */
+  filename: string | null;
+  mimeType: PolicyDocumentInputMimeType;
+  /**
+     * @minLength 20
+     * @maxLength 50000
+     */
+  content: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  version: string;
+  /** @nullable */
+  effectiveDate: string | null;
+  syntheticDataOnly: true;
+}
+
+export interface PolicyDocumentUpdate {
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  title?: string;
+  category?: PolicyDocumentCategory;
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  description?: string;
+  /**
+     * @minLength 20
+     * @maxLength 50000
+     */
+  content?: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  version?: string;
+  /** @nullable */
+  effectiveDate?: string | null;
+  status?: PolicyDocumentStatus;
+  syntheticDataOnly: true;
+}
+
+export interface DeletePolicyDocumentResult {
+  deleted: boolean;
+  id: number;
+}
+
 export type AgentActionStatus = typeof AgentActionStatus[keyof typeof AgentActionStatus];
 
 

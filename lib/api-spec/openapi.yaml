@@ -16,6 +16,8 @@ tags:
     description: Human-approved Google Calendar follow-up operations
   - name: history
     description: Persistent SchoolOps agent runs and action history
+  - name: knowledge
+    description: Synthetic SchoolOps policy and procedure knowledge base
 paths:
   /healthz:
     get:
@@ -201,6 +203,88 @@ paths:
                 $ref: "#/components/schemas/AgentAction"
         "404":
           description: Action not found
+  /policy-documents:
+    get:
+      operationId: listPolicyDocuments
+      tags: [knowledge]
+      summary: List policy knowledge documents
+      description: Returns active and archived synthetic/demo policy documents available to SchoolOps.
+      responses:
+        "200":
+          description: Policy documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyDocument"
+    post:
+      operationId: createPolicyDocument
+      tags: [knowledge]
+      summary: Add a synthetic policy document
+      description: Persists reviewed text or Markdown content for demo policy grounding. Binary files and real school records are not accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyDocumentInput"
+      responses:
+        "201":
+          description: Policy document created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyDocument"
+        "400":
+          description: Invalid or non-synthetic policy document
+        "415":
+          description: Unsupported document type
+  /policy-documents/{id}:
+    patch:
+      operationId: updatePolicyDocument
+      tags: [knowledge]
+      summary: Update or archive a policy document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyDocumentUpdate"
+      responses:
+        "200":
+          description: Policy document updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyDocument"
+        "400":
+          description: Invalid update
+        "404":
+          description: Policy document not found
+    delete:
+      operationId: deletePolicyDocument
+      tags: [knowledge]
+      summary: Delete a policy document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Policy document deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletePolicyDocumentResult"
+        "404":
+          description: Policy document not found
 components:
   schemas:
     HealthStatus:
@@ -288,6 +372,70 @@ components:
           type: string
           format: date-time
       required: [created, eventId, calendarLabel, actionId, completedAt]
+    PolicyDocumentCategory:
+      type: string
+      enum: [handbook, attendance, enrollment, tuition, procedure]
+    PolicyDocumentStatus:
+      type: string
+      enum: [active, archived]
+    PolicyDocumentSourceKind:
+      type: string
+      enum: [demo, uploaded]
+    PolicyDocument:
+      type: object
+      properties:
+        id: { type: integer }
+        sourceId: { type: string }
+        title: { type: string }
+        category: { $ref: "#/components/schemas/PolicyDocumentCategory" }
+        description: { type: string }
+        filename: { type: [string, "null"] }
+        mimeType: { type: string, enum: [text/plain, text/markdown] }
+        content: { type: string }
+        version: { type: string }
+        effectiveDate: { type: [string, "null"], format: date }
+        status: { $ref: "#/components/schemas/PolicyDocumentStatus" }
+        sourceKind: { $ref: "#/components/schemas/PolicyDocumentSourceKind" }
+        syntheticOnly: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, sourceId, title, category, description, filename, mimeType, content, version, effectiveDate, status, sourceKind, syntheticOnly, createdAt, updatedAt]
+    PolicyDocumentInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 3, maxLength: 160 }
+        category: { $ref: "#/components/schemas/PolicyDocumentCategory" }
+        description: { type: string, minLength: 3, maxLength: 500 }
+        filename: { type: [string, "null"], maxLength: 180 }
+        mimeType: { type: string, enum: [text/plain, text/markdown] }
+        content: { type: string, minLength: 20, maxLength: 50000 }
+        version: { type: string, minLength: 1, maxLength: 40 }
+        effectiveDate: { type: [string, "null"], format: date }
+        syntheticDataOnly:
+          type: boolean
+          const: true
+      required: [title, category, description, filename, mimeType, content, version, effectiveDate, syntheticDataOnly]
+    PolicyDocumentUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 3, maxLength: 160 }
+        category: { $ref: "#/components/schemas/PolicyDocumentCategory" }
+        description: { type: string, minLength: 3, maxLength: 500 }
+        content: { type: string, minLength: 20, maxLength: 50000 }
+        version: { type: string, minLength: 1, maxLength: 40 }
+        effectiveDate: { type: [string, "null"], format: date }
+        status: { $ref: "#/components/schemas/PolicyDocumentStatus" }
+        syntheticDataOnly:
+          type: boolean
+          const: true
+      required: [syntheticDataOnly]
+    DeletePolicyDocumentResult:
+      type: object
+      properties:
+        deleted: { type: boolean }
+        id: { type: integer }
+      required: [deleted, id]
     AgentActionStatus:
       type: string
       enum: [pending, approved, dismissed, completed]

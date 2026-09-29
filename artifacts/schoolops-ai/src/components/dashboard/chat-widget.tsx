@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui';
-import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check } from 'lucide-react';
+import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check, Badge } from 'lucide-react';
 import { AgentAnswer, answerSchoolOpsQuestion } from '@/lib/schoolops-agent';
 import { SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
 import { cn } from '@/lib/utils';
+import { useListPolicyDocuments } from '@workspace/api-client-react';
+import { BookOpen } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -20,6 +22,7 @@ export function ChatWidget() {
   const [isTyping, setIsTyping] = useState(false);
   const [stagedActions, setStagedActions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { data: policyDocs } = useListPolicyDocuments();
 
   const suggestions = [
     "How many 7th graders are missing documents?",
@@ -38,10 +41,11 @@ export function ChatWidget() {
 
     // Simulate agent response
     setTimeout(() => {
+      const apiDocuments = policyDocs ?? [];
       const agentMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'agent',
-        answer: answerSchoolOpsQuestion(text),
+        answer: answerSchoolOpsQuestion(text, apiDocuments.length > 0 ? apiDocuments : undefined),
       };
       setMessages(prev => [...prev, agentMsg]);
       setIsTyping(false);
@@ -126,10 +130,40 @@ export function ChatWidget() {
                          ))}
                        </ul>
                      </div>
+                     {msg.answer.citations && msg.answer.citations.length > 0 && (
+                       <div className="border-t pt-3 mt-3">
+                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                           <BookOpen className="h-3 w-3" /> Policy Context
+                         </div>
+                         <div className="space-y-3">
+                           {msg.answer.citations.map((citation) => (
+                             <div key={citation.id} className="rounded-md border bg-background/50 p-2.5 shadow-sm">
+                               <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                 <span className="text-xs font-semibold text-foreground">{citation.title}</span>
+                                 <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono bg-background">{citation.sourceKind}</Badge>
+                               </div>
+                               <div className="text-[10px] text-muted-foreground font-mono mb-1.5">{citation.section} · v{citation.version}</div>
+                               <div className="text-[11px] italic text-muted-foreground border-l-2 pl-2 border-primary/20">"{citation.quote}"</div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                     
                      {msg.answer.recommendation && (
-                       <div className="border-t pt-3">
-                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-                           <Lightbulb className="h-3 w-3" /> Recommendation
+                       <div className="border-t pt-3 mt-3">
+                         <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-start sm:justify-between text-[10px] font-bold uppercase tracking-wider">
+                           <div className="flex items-center gap-1.5 text-muted-foreground mt-1">
+                              <Lightbulb className="h-3 w-3" /> Recommendation
+                           </div>
+                           {msg.answer.recommendationBasis && (
+                             <span className={cn(
+                               "px-1.5 py-0.5 rounded-sm border shrink-0",
+                               msg.answer.recommendationBasis === 'policy-grounded' ? "bg-success/10 text-success border-success/20" : "bg-muted text-muted-foreground border-border"
+                             )}>
+                               {msg.answer.recommendationBasis === 'policy-grounded' ? 'Policy-grounded' : 'General AI Suggestion'}
+                             </span>
+                           )}
                          </div>
                          <p className="text-xs text-muted-foreground">{msg.answer.recommendation}</p>
                        </div>

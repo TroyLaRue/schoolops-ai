@@ -343,3 +343,140 @@ export const UpdateAgentActionResponse = zod.object({
 })
 
 
+/**
+ * Returns active and archived synthetic/demo policy documents available to SchoolOps.
+ * @summary List policy knowledge documents
+ */
+export const ListPolicyDocumentsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['handbook', 'attendance', 'enrollment', 'tuition', 'procedure']),
+  "description": zod.string(),
+  "filename": zod.string().nullable(),
+  "mimeType": zod.enum(['text/plain', 'text/markdown']),
+  "content": zod.string(),
+  "version": zod.string(),
+  "effectiveDate": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "sourceKind": zod.enum(['demo', 'uploaded']),
+  "syntheticOnly": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPolicyDocumentsResponse = zod.array(ListPolicyDocumentsResponseItem)
+
+
+/**
+ * Persists reviewed text or Markdown content for demo policy grounding. Binary files and real school records are not accepted.
+ * @summary Add a synthetic policy document
+ */
+export const createPolicyDocumentBodyTitleMin = 3;
+export const createPolicyDocumentBodyTitleMax = 160;
+
+export const createPolicyDocumentBodyDescriptionMin = 3;
+export const createPolicyDocumentBodyDescriptionMax = 500;
+
+export const createPolicyDocumentBodyFilenameMax = 180;
+
+export const createPolicyDocumentBodyContentMin = 20;
+export const createPolicyDocumentBodyContentMax = 50000;
+
+export const createPolicyDocumentBodyVersionMax = 40;
+
+
+
+export const CreatePolicyDocumentBody = zod.object({
+  "title": zod.string().min(createPolicyDocumentBodyTitleMin).max(createPolicyDocumentBodyTitleMax),
+  "category": zod.enum(['handbook', 'attendance', 'enrollment', 'tuition', 'procedure']),
+  "description": zod.string().min(createPolicyDocumentBodyDescriptionMin).max(createPolicyDocumentBodyDescriptionMax),
+  "filename": zod.string().max(createPolicyDocumentBodyFilenameMax).nullable(),
+  "mimeType": zod.enum(['text/plain', 'text/markdown']),
+  "content": zod.string().min(createPolicyDocumentBodyContentMin).max(createPolicyDocumentBodyContentMax),
+  "version": zod.string().min(1).max(createPolicyDocumentBodyVersionMax),
+  "effectiveDate": zod.coerce.date().nullable(),
+  "syntheticDataOnly": zod.literal(true)
+})
+
+export const CreatePolicyDocumentResponse = zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['handbook', 'attendance', 'enrollment', 'tuition', 'procedure']),
+  "description": zod.string(),
+  "filename": zod.string().nullable(),
+  "mimeType": zod.enum(['text/plain', 'text/markdown']),
+  "content": zod.string(),
+  "version": zod.string(),
+  "effectiveDate": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "sourceKind": zod.enum(['demo', 'uploaded']),
+  "syntheticOnly": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update or archive a policy document
+ */
+export const UpdatePolicyDocumentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updatePolicyDocumentBodyTitleMin = 3;
+export const updatePolicyDocumentBodyTitleMax = 160;
+
+export const updatePolicyDocumentBodyDescriptionMin = 3;
+export const updatePolicyDocumentBodyDescriptionMax = 500;
+
+export const updatePolicyDocumentBodyContentMin = 20;
+export const updatePolicyDocumentBodyContentMax = 50000;
+
+export const updatePolicyDocumentBodyVersionMax = 40;
+
+
+
+export const UpdatePolicyDocumentBody = zod.object({
+  "title": zod.string().min(updatePolicyDocumentBodyTitleMin).max(updatePolicyDocumentBodyTitleMax).optional(),
+  "category": zod.enum(['handbook', 'attendance', 'enrollment', 'tuition', 'procedure']).optional(),
+  "description": zod.string().min(updatePolicyDocumentBodyDescriptionMin).max(updatePolicyDocumentBodyDescriptionMax).optional(),
+  "content": zod.string().min(updatePolicyDocumentBodyContentMin).max(updatePolicyDocumentBodyContentMax).optional(),
+  "version": zod.string().min(1).max(updatePolicyDocumentBodyVersionMax).optional(),
+  "effectiveDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['active', 'archived']).optional(),
+  "syntheticDataOnly": zod.literal(true)
+})
+
+export const UpdatePolicyDocumentResponse = zod.object({
+  "id": zod.number().int(),
+  "sourceId": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['handbook', 'attendance', 'enrollment', 'tuition', 'procedure']),
+  "description": zod.string(),
+  "filename": zod.string().nullable(),
+  "mimeType": zod.enum(['text/plain', 'text/markdown']),
+  "content": zod.string(),
+  "version": zod.string(),
+  "effectiveDate": zod.coerce.date().nullable(),
+  "status": zod.enum(['active', 'archived']),
+  "sourceKind": zod.enum(['demo', 'uploaded']),
+  "syntheticOnly": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a policy document
+ */
+export const DeletePolicyDocumentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeletePolicyDocumentResponse = zod.object({
+  "deleted": zod.boolean(),
+  "id": zod.number().int()
+})
+
+

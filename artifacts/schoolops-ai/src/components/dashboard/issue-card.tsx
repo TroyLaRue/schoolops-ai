@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui';
-import { ShieldAlert, AlertTriangle, CheckCircle, FileText, Check, X, Eye, MessageSquare, ListTodo, Activity } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, CheckCircle, FileText, Check, X, Eye, MessageSquare, ListTodo, Activity, BookOpen } from 'lucide-react';
 import { Issue, RecommendedAction } from '@/data/mock';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +68,18 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
               <p className="text-muted-foreground leading-relaxed">{issue.impact}</p>
             </div>
           </div>
+          
+          {issue.policyBasis && (
+            <div className="flex gap-3 items-start">
+              <div className="bg-accent/50 p-1.5 rounded-sm mt-0.5">
+                <BookOpen className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <span className="font-semibold text-foreground block mb-1">Policy Basis</span>
+                <p className="text-muted-foreground leading-relaxed">{issue.policyBasis}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {issue.actions.length > 0 && (

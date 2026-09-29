@@ -18,6 +18,7 @@ export interface Issue {
   severity: IssueSeverity;
   evidence: string;
   impact: string;
+  policyBasis?: string;
   actions: RecommendedAction[];
 }
 
@@ -29,6 +30,7 @@ export const MOCK_ISSUES: Issue[] = [
     severity: 'critical',
     evidence: '37 students in Grade 6-8 have not submitted updated Tdap booster records. State reporting deadline is 5:00 PM today.',
     impact: 'Non-compliance results in automatic state funding deductions and students must be excluded from campus starting tomorrow.',
+    policyBasis: 'Enrollment & Required Documents Guide, Section 2. Immunization review, POL-ENR-2026',
     actions: [
       {
         id: 'act-001a',
@@ -55,6 +57,7 @@ export const MOCK_ISSUES: Issue[] = [
     severity: 'critical',
     evidence: 'Grade 11 attendance dropped to 81% today (historical average 94%). 23 students absent.',
     impact: 'Sudden drops often indicate a spreading illness or an unapproved senior skip day. Needs immediate investigation.',
+    policyBasis: 'Attendance & Student Support Policy, Section 4. Urgent patterns, POL-ATT-2026',
     actions: [
       {
         id: 'act-002a',
@@ -91,6 +94,7 @@ export const MOCK_ISSUES: Issue[] = [
     severity: 'healthy',
     evidence: '94% of October installments collected successfully.',
     impact: 'Ensures operational cash flow for payroll next week.',
+    policyBasis: 'Tuition Account Review Policy, Section 2. Account flags, POL-TUI-2026',
     actions: []
   }
 ];

@@ -29,10 +29,14 @@ import type {
   CalendarFollowUpApproval,
   CalendarFollowUpResult,
   CalendarStatus,
+  DeletePolicyDocumentResult,
   GmailDemoEmailInput,
   GmailSendResult,
   GmailStatus,
-  HealthStatus
+  HealthStatus,
+  PolicyDocument,
+  PolicyDocumentInput,
+  PolicyDocumentUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -889,5 +893,335 @@ export const useUpdateAgentAction = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAgentActionMutationOptions(options));
+    }
+
+export const getListPolicyDocumentsUrl = () => {
+
+
+
+
+  return `/api/policy-documents`
+}
+
+/**
+ * Returns active and archived synthetic/demo policy documents available to SchoolOps.
+ * @summary List policy knowledge documents
+ */
+export const listPolicyDocuments = async ( options?: Parameters<typeof customFetch>[1]): Promise<PolicyDocument[]> => {
+
+  return customFetch<PolicyDocument[]>(getListPolicyDocumentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPolicyDocumentsQueryKey = () => {
+    return [
+    `/api/policy-documents`
+    ] as const;
+    }
+
+
+export const getListPolicyDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listPolicyDocuments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPolicyDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPolicyDocumentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPolicyDocuments>>> = ({ signal }) => listPolicyDocuments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPolicyDocuments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPolicyDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listPolicyDocuments>>>
+export type ListPolicyDocumentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List policy knowledge documents
+ */
+
+export function useListPolicyDocuments<TData = Awaited<ReturnType<typeof listPolicyDocuments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPolicyDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPolicyDocumentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePolicyDocumentUrl = () => {
+
+
+
+
+  return `/api/policy-documents`
+}
+
+/**
+ * Persists reviewed text or Markdown content for demo policy grounding. Binary files and real school records are not accepted.
+ * @summary Add a synthetic policy document
+ */
+export const createPolicyDocument = async (policyDocumentInput: PolicyDocumentInput, options?: Parameters<typeof customFetch>[1]): Promise<PolicyDocument> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PolicyDocument>(getCreatePolicyDocumentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(policyDocumentInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePolicyDocumentMutationKey = () => ['createPolicyDocument'] as const;
+
+export const getCreatePolicyDocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPolicyDocument>>, TError,CreatePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPolicyDocument>>, TError,CreatePolicyDocumentMutationVariables, TContext> => {
+
+const mutationKey = getCreatePolicyDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPolicyDocument>>, CreatePolicyDocumentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPolicyDocument(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePolicyDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof createPolicyDocument>>>
+    export type CreatePolicyDocumentMutationBody = BodyType<PolicyDocumentInput>
+    export type CreatePolicyDocumentMutationError = ErrorType<void>
+    export type CreatePolicyDocumentMutationVariables = {data: BodyType<PolicyDocumentInput>}
+
+    /**
+ * @summary Add a synthetic policy document
+ */
+export const useCreatePolicyDocument = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPolicyDocument>>, TError,CreatePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPolicyDocument>>,
+        TError,
+        CreatePolicyDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePolicyDocumentMutationOptions(options));
+    }
+
+export const getUpdatePolicyDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/policy-documents/${id}`
+}
+
+/**
+ * @summary Update or archive a policy document
+ */
+export const updatePolicyDocument = async (id: number,
+    policyDocumentUpdate: PolicyDocumentUpdate, options?: Parameters<typeof customFetch>[1]): Promise<PolicyDocument> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PolicyDocument>(getUpdatePolicyDocumentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(policyDocumentUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdatePolicyDocumentMutationKey = () => ['updatePolicyDocument'] as const;
+
+export const getUpdatePolicyDocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePolicyDocument>>, TError,UpdatePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePolicyDocument>>, TError,UpdatePolicyDocumentMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePolicyDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePolicyDocument>>, UpdatePolicyDocumentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePolicyDocument(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePolicyDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof updatePolicyDocument>>>
+    export type UpdatePolicyDocumentMutationBody = BodyType<PolicyDocumentUpdate>
+    export type UpdatePolicyDocumentMutationError = ErrorType<void>
+    export type UpdatePolicyDocumentMutationVariables = {id: number;data: BodyType<PolicyDocumentUpdate>}
+
+    /**
+ * @summary Update or archive a policy document
+ */
+export const useUpdatePolicyDocument = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePolicyDocument>>, TError,UpdatePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePolicyDocument>>,
+        TError,
+        UpdatePolicyDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePolicyDocumentMutationOptions(options));
+    }
+
+export const getDeletePolicyDocumentUrl = (id: number,) => {
+
+
+
+
+  return `/api/policy-documents/${id}`
+}
+
+/**
+ * @summary Delete a policy document
+ */
+export const deletePolicyDocument = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<DeletePolicyDocumentResult> => {
+
+  return customFetch<DeletePolicyDocumentResult>(getDeletePolicyDocumentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePolicyDocumentMutationKey = () => ['deletePolicyDocument'] as const;
+
+export const getDeletePolicyDocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePolicyDocument>>, TError,DeletePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePolicyDocument>>, TError,DeletePolicyDocumentMutationVariables, TContext> => {
+
+const mutationKey = getDeletePolicyDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePolicyDocument>>, DeletePolicyDocumentMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePolicyDocument(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePolicyDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof deletePolicyDocument>>>
+
+    export type DeletePolicyDocumentMutationError = ErrorType<void>
+    export type DeletePolicyDocumentMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a policy document
+ */
+export const useDeletePolicyDocument = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePolicyDocument>>, TError,DeletePolicyDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePolicyDocument>>,
+        TError,
+        DeletePolicyDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePolicyDocumentMutationOptions(options));
     }
 

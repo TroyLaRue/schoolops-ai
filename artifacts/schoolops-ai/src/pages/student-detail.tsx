@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/shell';
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui';
 import { buttonVariants } from '@/components/ui/button';
 import { NORMALIZED_SCHOOL_DATA, SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
+import { citationsForCategory, DEMO_POLICY_DOCUMENTS } from '@/data/schoolops-policies';
 import { 
   ChevronRight, 
   Sparkles, 
@@ -16,7 +17,8 @@ import {
   Mail, 
   ArrowLeft,
   CalendarPlus,
-  CalendarDays
+  CalendarDays,
+  BookOpen
 } from 'lucide-react';
 import { 
   useGetActivityHistory, 
@@ -24,6 +26,7 @@ import {
   useCreateAgentAction,
   useCreateCalendarFollowUp,
   useGetCalendarStatus,
+  useListPolicyDocuments,
   getGetActivityHistoryQueryKey, 
   getGetCalendarStatusQueryKey,
   type AgentAction 
@@ -119,6 +122,8 @@ export default function StudentDetail() {
   const updateAction = useUpdateAgentAction();
   const createAction = useCreateAgentAction();
   const createCalendarEvent = useCreateCalendarFollowUp();
+  const { data: policyDocumentsData } = useListPolicyDocuments();
+  const docs = policyDocumentsData && policyDocumentsData.length > 0 ? policyDocumentsData : DEMO_POLICY_DOCUMENTS;
 
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [followUpDate, setFollowUpDate] = useState(() => {
@@ -302,6 +307,36 @@ export default function StudentDetail() {
                            : "Review the specific flags below and approve the suggested communications or tasks to resolve these issues."}
                        </span>
                     </div>
+
+                    {!isHealthy && (
+                      <div className="mt-4 space-y-2 border-t border-primary/10 pt-4">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-3">
+                           <BookOpen className="h-3 w-3" /> Relevant Policy Basis
+                        </div>
+                        {['attendance', 'enrollment', 'tuition'].map(category => {
+                          let hasCategory = false;
+                          if (category === 'attendance' && student.attendanceRisk !== 'low') hasCategory = true;
+                          if (category === 'enrollment' && student.missingDocuments.length > 0) hasCategory = true;
+                          if (category === 'tuition' && student.tuitionStatus !== 'current') hasCategory = true;
+                          
+                          if (!hasCategory) return null;
+                          
+                          const citations = citationsForCategory(category as any, docs);
+                          if (citations.length === 0) return null;
+                          
+                          return citations.map(citation => (
+                             <div key={citation.id} className="text-xs rounded border border-primary/10 bg-background/50 p-3 shadow-sm">
+                               <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                 <span className="font-semibold text-foreground/90">{citation.title}</span>
+                                 <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono">{citation.sourceKind}</Badge>
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mb-1.5 font-mono">{citation.section} · v{citation.version}</div>
+                               <div className="text-[11px] text-muted-foreground italic border-l-2 pl-2 border-primary/20 leading-relaxed">"{citation.quote}"</div>
+                             </div>
+                          ));
+                        })}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
