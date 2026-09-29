@@ -18,6 +18,7 @@ import HistoryPage from '@/pages/history';
 import Integrations from '@/pages/integrations';
 import Knowledge from '@/pages/knowledge';
 import Welcome from '@/pages/welcome';
+import Demo from '@/pages/demo';
 import Onboarding from '@/pages/onboarding';
 import { SignInPage, SignUpPage } from '@/pages/auth';
 
@@ -81,6 +82,7 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function Router() {
   return <RoutedErrorBoundary><Switch>
     <Route path="/" component={Home} />
+    <Route path="/demo" component={Demo} />
     <Route path="/sign-in/*?" component={SignInPage} />
     <Route path="/sign-up/*?" component={SignUpPage} />
     <Route path="/onboarding">{() => <Authenticated needsSchool={false}><Onboarding /></Authenticated>}</Route>

@@ -6,7 +6,7 @@ export default function Welcome() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10">
         <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight"><img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" className="h-10 w-10 rounded-xl" /> SchoolOps AI</Link>
-        <nav className="flex items-center gap-3 text-sm font-medium"><Link href="/sign-in" className="rounded-md px-3 py-2 hover:bg-accent">Sign in</Link><Link href="/sign-up" className="rounded-md bg-primary px-4 py-2.5 text-primary-foreground hover:bg-primary/90">Get started</Link></nav>
+        <nav className="flex items-center gap-2 text-sm font-medium sm:gap-3"><Link href="/demo" data-testid="link-try-demo-header" className="rounded-md px-3 py-2 text-primary hover:bg-accent">Try Demo</Link><Link href="/sign-in" className="rounded-md px-3 py-2 hover:bg-accent">Sign in</Link><Link href="/sign-up" className="hidden rounded-md bg-primary px-4 py-2.5 text-primary-foreground hover:bg-primary/90 sm:inline-flex">Get started</Link></nav>
       </header>
       <main>
         <section className="mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-16 md:grid-cols-[1.1fr_.9fr] md:items-center md:px-10 md:pb-32 md:pt-28">
@@ -14,8 +14,8 @@ export default function Welcome() {
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[.16em] text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> A quieter way to run the day</div>
             <h1 className="max-w-3xl text-5xl font-semibold leading-[1.07] tracking-[-.055em] sm:text-6xl lg:text-7xl">A clear view of what needs your attention.</h1>
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">Bring school operations into one considered workspace. See the evidence, review the recommendation, and make the final call yourself.</p>
-            <div className="mt-9 flex flex-wrap gap-3"><Link href="/sign-up" className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90">Create your workspace <ArrowRight className="h-4 w-4" /></Link><Link href="/sign-in" className="inline-flex min-h-12 items-center rounded-md border bg-card px-6 font-medium hover:bg-accent">I have an account</Link></div>
-            <p className="mt-6 text-xs text-muted-foreground">Explore with synthetic school data. No real student records are required.</p>
+            <div className="mt-9 flex flex-wrap gap-3"><Link href="/demo" data-testid="link-try-demo-hero" className="inline-flex min-h-12 items-center gap-2 rounded-md bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90">Try Demo <ArrowRight className="h-4 w-4" /></Link><Link href="/sign-up" className="inline-flex min-h-12 items-center rounded-md border bg-card px-6 font-medium hover:bg-accent">Create your workspace</Link></div>
+            <p className="mt-6 text-xs text-muted-foreground">A two-minute guided walkthrough. Synthetic data only; no account needed.</p>
           </div>
           <div className="relative rounded-[28px] border border-primary/10 bg-[#e8eef7] p-5 shadow-[0_30px_80px_rgba(23,55,102,.09)] md:p-8">
             <div className="rounded-xl border bg-card p-5 shadow-sm">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useClerk, useUser } from '@clerk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, MessageSquare, Settings, History, Link2, BookOpen, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings, History, Link2, BookOpen, LogOut, ChevronDown, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSchoolSession } from '@/lib/school-session';
 
@@ -21,6 +21,7 @@ export function Sidebar() {
     { icon: BookOpen, label: 'Knowledge', href: '/knowledge' },
     { icon: Link2, label: 'Integrations', href: '/integrations' },
     { icon: History, label: 'Activity History', mobileLabel: 'History', href: '/history' },
+    { icon: PlayCircle, label: 'Demo Mode', mobileLabel: 'Demo', href: '/demo' },
     ...(isAdmin ? [{ icon: Settings, label: 'Settings', href: '/settings' }] : []),
   ];
   async function handleSwitch(id: number) {
