@@ -1,271 +1,69 @@
-import React, { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCreateSchoolInvitation, useListSchoolMembers, useUpdateCurrentSchool, useUpdateSchoolMemberRole, type SchoolRole } from '@workspace/api-client-react';
+import { Building2, Check, Copy, KeyRound, ShieldCheck, Users } from 'lucide-react';
 import { Sidebar } from '@/components/layout/shell';
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@/components/ui';
-import { Building, ShieldCheck, Link2, BellRing, Database, AlertCircle, Mail, ExternalLink, LockKeyhole, CheckCircle2, Clock3 } from 'lucide-react';
-import { GMAIL_STATE_EVENT, getGmailActionLog, getGmailStatus, setGmailStatus, type GmailActionLogEntry, type GmailConnectionStatus } from '@/lib/gmail-demo';
-import { useGetGmailStatus } from '@workspace/api-client-react';
+import { useSchoolSession } from '@/lib/school-session';
+
+const roles: SchoolRole[] = ['admin', 'principal', 'staff'];
 
 export default function Settings() {
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [gmailStatus, setGmailStatusState] = useState<GmailConnectionStatus>(getGmailStatus);
-  const [gmailLog, setGmailLog] = useState<GmailActionLogEntry[]>(getGmailActionLog);
-  const gmailConnection = useGetGmailStatus();
-  const isGmailConnected = gmailConnection.data?.connected === true;
+  const { session, currentSchool, isAdmin } = useSchoolSession();
+  const queryClient = useQueryClient();
+  const school = currentSchool?.school;
+  const [name, setName] = useState(school?.name ?? '');
+  const [inviteRole, setInviteRole] = useState<SchoolRole>('staff');
+  const [inviteToken, setInviteToken] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const members = useListSchoolMembers({ query: { enabled: !!currentSchool && isAdmin, queryKey: ['/api/schools/members', school?.id], staleTime: 10_000 } });
+  const updateSchool = useUpdateCurrentSchool();
+  const updateRole = useUpdateSchoolMemberRole();
+  const createInvite = useCreateSchoolInvitation();
 
-  React.useEffect(() => {
-    const syncGmailState = () => {
-      setGmailStatusState(getGmailStatus());
-      setGmailLog(getGmailActionLog());
-    };
-    window.addEventListener(GMAIL_STATE_EVENT, syncGmailState);
-    return () => window.removeEventListener(GMAIL_STATE_EVENT, syncGmailState);
-  }, []);
+  useEffect(() => { setName(school?.name ?? ''); setInviteToken(''); setError(''); setNotice(''); }, [school?.id, school?.name]);
 
-  React.useEffect(() => {
-    if (isGmailConnected) setGmailStatus('connected');
-  }, [isGmailConnected]);
+  async function saveSchool(event: FormEvent) {
+    event.preventDefault(); setError(''); setNotice('');
+    try {
+      const updated = await updateSchool.mutateAsync({ data: { name: name.trim() } });
+      queryClient.setQueryData(['/api/session', session?.userId], (old: typeof session) => old && old.currentSchool ? { ...old, currentSchool: { ...old.currentSchool, school: updated }, memberships: old.memberships.map(m => m.school.id === updated.id ? { ...m, school: updated } : m) } : old);
+      setNotice('School details saved.');
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not save school details.'); }
+  }
 
-  const handleSave = () => {
-    setSaveStatus('saving');
-    setTimeout(() => {
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 800);
-  };
+  async function createInvitation(event: FormEvent) {
+    event.preventDefault(); setError(''); setNotice(''); setInviteToken('');
+    try { const result = await createInvite.mutateAsync({ data: { role: inviteRole, expiresInDays: 7 } }); setInviteToken(result.token); setExpiresAt(result.expiresAt); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Could not create invitation.'); }
+  }
 
-  const handleConnectGmail = () => {
-    setGmailStatus('oauth_pending');
-  };
+  async function changeRole(id: number, role: SchoolRole) {
+    setError(''); setNotice('');
+    try { await updateRole.mutateAsync({ id, data: { role } }); await queryClient.invalidateQueries({ queryKey: ['/api/schools/members', school?.id] }); setNotice('Member role updated.'); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Could not change role.'); }
+  }
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
-        <header className="min-h-16 border-b bg-card flex items-center px-4 py-2 sm:px-6 sticky top-0 z-20">
-          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Settings & Configuration</h1>
-        </header>
-
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-          <div className="max-w-4xl mx-auto space-y-8">
-            
-            <div className="flex flex-col gap-3 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">School Profile</h2>
-                <p className="text-sm text-muted-foreground">Manage your institution's core operational parameters.</p>
-              </div>
-              <Button onClick={handleSave} disabled={saveStatus === 'saving'} className="min-h-11 w-full min-[380px]:w-auto">
-                {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Changes'}
-              </Button>
-            </div>
-
-            <Card className="overflow-hidden border-primary/20">
-              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-card shadow-sm">
-                      <Mail className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CardTitle className="text-base">Gmail Integration</CardTitle>
-                        <Badge variant="secondary" className="border border-primary/15 bg-primary/10 text-primary">Demo / Test Account</Badge>
-                      </div>
-                      <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-                        Prepare and review synthetic communications through a secure, human-approved workflow. No real school records are used.
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant={isGmailConnected ? 'success' : 'outline'} className="w-fit gap-1.5 py-1">
-                    {isGmailConnected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
-                    {isGmailConnected ? 'Connected' : gmailConnection.isLoading ? 'Checking connection' : gmailStatus === 'oauth_pending' ? 'OAuth setup pending' : 'Not connected'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-6 pt-6 lg:grid-cols-[1.15fr_.85fr]">
-                <div className="space-y-4">
-                  <div className="rounded-lg border bg-muted/20 p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <LockKeyhole className="h-4 w-4 text-primary" />
-                      Safe connection flow
-                    </div>
-                    <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
-                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">01</span><span>Authorize a dedicated Gmail demo account through Google OAuth.</span></li>
-                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">02</span><span>SchoolOps creates a draft with synthetic recipient, subject, and body fields.</span></li>
-                      <li className="flex gap-3"><span className="font-mono text-xs text-primary">03</span><span>A human reviews and approves the draft before any send request.</span></li>
-                    </ol>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button onClick={handleConnectGmail} className="gap-2" disabled={isGmailConnected || gmailStatus === 'oauth_pending'}>
-                      {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                      {isGmailConnected ? 'Gmail Connected' : gmailStatus === 'oauth_pending' ? 'Connection requested' : 'Connect Gmail'}
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      {isGmailConnected ? 'Authorized for synthetic, self-addressed test messages only.' : 'Sending stays disabled until valid credentials are confirmed.'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border bg-card">
-                  <div className="flex items-center justify-between border-b px-4 py-3">
-                    <div className="text-sm font-semibold">Gmail action log</div>
-                    <Badge variant="outline">{gmailLog.length} events</Badge>
-                  </div>
-                  <div className="max-h-52 overflow-y-auto p-4">
-                    {gmailLog.length ? (
-                      <div className="space-y-3">
-                        {gmailLog.slice(0, 6).map((entry) => (
-                          <div key={entry.id} className="flex gap-3 text-xs">
-                            <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                            <div>
-                              <div className="font-medium text-foreground">{entry.message}</div>
-                              <div className="mt-0.5 text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-7 text-center text-xs text-muted-foreground">Draft, approval, and send events will appear here.</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Left Column */}
-              <div className="md:col-span-2 space-y-6">
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Building className="h-5 w-5 text-primary" /> Institution Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">School Name</label>
-                        <input type="text" defaultValue="Oakridge Middle School" className="w-full px-3 py-2 border rounded-md text-sm bg-background" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium">District ID</label>
-                        <input type="text" defaultValue="DIST-8842" className="w-full px-3 py-2 border rounded-md text-sm bg-muted text-muted-foreground" disabled />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Operating Hours</label>
-                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                         <input type="time" defaultValue="07:30" className="min-w-0 w-full px-2 sm:px-3 py-2 border rounded-md text-sm bg-background" />
-                        <span className="text-muted-foreground">to</span>
-                         <input type="time" defaultValue="15:30" className="min-w-0 w-full px-2 sm:px-3 py-2 border rounded-md text-sm bg-background" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <ShieldCheck className="h-5 w-5 text-primary" /> AI Agent Preferences
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-foreground">Autonomy Level</h4>
-                      
-                      <label className="flex items-start gap-3 p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors">
-                        <input type="radio" name="autonomy" className="mt-1" defaultChecked />
-                        <div>
-                          <div className="font-medium text-sm">Human-in-the-Loop (Recommended)</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">AI drafts communications and proposes tasks, but requires explicit human approval before execution.</div>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-start gap-3 p-3 border rounded-md hover:bg-muted/50 cursor-pointer transition-colors">
-                        <input type="radio" name="autonomy" className="mt-1" />
-                        <div>
-                          <div className="font-medium text-sm">Semi-Autonomous</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">AI executes routine tasks automatically but requires approval for external communications.</div>
-                        </div>
-                      </label>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-foreground">Alert Thresholds</h4>
-                       <div className="flex flex-col gap-2 py-3 border-b sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm">Attendance Drop Anomaly</span>
-                         <select defaultValue="10% Variance" className="min-h-11 w-full border rounded-md text-sm p-2 bg-background sm:w-auto">
-                          <option>5% Variance</option>
-                          <option>10% Variance</option>
-                          <option>15% Variance</option>
-                        </select>
-                      </div>
-                       <div className="flex flex-col gap-2 py-3 border-b sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm">Missing Document Deadline</span>
-                         <select defaultValue="48 Hours Before" className="min-h-11 w-full border rounded-md text-sm p-2 bg-background sm:w-auto">
-                          <option>24 Hours Before</option>
-                          <option>48 Hours Before</option>
-                          <option>1 Week Before</option>
-                        </select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Link2 className="h-5 w-5 text-primary" /> Future Integrations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-muted p-3 rounded-md mb-4 flex gap-2 items-start">
-                      <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        These integrations are strictly demo-only and not connected to any live data systems.
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 border rounded-md">
-                        <div className="flex items-center gap-3">
-                          <Database className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">PowerSchool SIS</span>
-                        </div>
-                        <Badge variant="outline">Simulated source</Badge>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-3 border rounded-md">
-                        <div className="flex items-center gap-3">
-                          <BellRing className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Twilio SMS</span>
-                        </div>
-                        <Badge variant="outline">Simulated source</Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 border rounded-md opacity-60 grayscale">
-                        <div className="flex items-center gap-3">
-                          <Database className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Blackbaud CRM</span>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2">Planned</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-              </div>
-
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return <div className="flex min-h-[100dvh] bg-background"><Sidebar /><div className="min-w-0 flex-1 pb-24 md:pl-64 md:pb-0">
+    <header className="sticky top-0 z-20 flex min-h-16 items-center border-b bg-card px-5 md:px-8"><div><h1 className="text-lg font-semibold tracking-tight">School settings</h1><p className="text-xs text-muted-foreground">{school?.name}</p></div></header>
+    <main className="mx-auto max-w-5xl space-y-8 px-5 py-8 md:px-8 md:py-12">
+      <div><p className="text-xs font-semibold uppercase tracking-[.17em] text-primary">Workspace administration</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">The people and place behind the work.</h2><p className="mt-2 text-sm text-muted-foreground">Manage this school's identity and access. Changes stay within this workspace.</p></div>
+      {!isAdmin && <div className="rounded-lg border bg-card p-5 text-sm text-muted-foreground"><ShieldCheck className="mb-3 h-5 w-5 text-primary" />Only administrators can manage school settings and members. Your role is {currentSchool?.membership.role}.</div>}
+      {error && <div role="alert" className="rounded-md border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>}
+      {notice && <div role="status" className="flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 p-4 text-sm text-primary"><Check className="h-4 w-4" />{notice}</div>}
+      <section className="rounded-xl border bg-card p-6 shadow-sm"><div className="flex items-center gap-3"><Building2 className="h-5 w-5 text-primary" /><h3 className="text-lg font-semibold">School profile</h3></div><p className="mt-2 text-sm text-muted-foreground">A clear name helps your team know which school they are working in.</p><form onSubmit={saveSchool} className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end"><label className="flex-1 text-sm font-medium">School name<input required minLength={2} maxLength={100} value={name} disabled={!isAdmin} onChange={e=>setName(e.target.value)} className="mt-2 min-h-11 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-70" /></label>{isAdmin && <button type="submit" disabled={updateSchool.isPending || name.trim() === school?.name} className="min-h-11 rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50">{updateSchool.isPending ? 'Saving…' : 'Save changes'}</button>}</form><div className="mt-4 text-xs text-muted-foreground">Workspace slug: {school?.slug} · Synthetic data only</div></section>
+      {isAdmin && <section className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
+        <div className="rounded-xl border bg-card p-6 shadow-sm"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><h3 className="text-lg font-semibold">Members</h3></div><p className="mt-2 text-sm text-muted-foreground">Assign the right level of access to each person.</p><div className="mt-6 divide-y border-t">
+          {members.isLoading && <div className="space-y-3 py-5"><div className="h-12 animate-pulse rounded bg-muted" /><div className="h-12 animate-pulse rounded bg-muted" /></div>}
+          {members.isError && <div className="py-5 text-sm text-destructive">Members could not be loaded. <button type="button" onClick={() => void members.refetch()} className="font-semibold underline">Retry</button></div>}
+          {members.data?.length === 0 && <div className="py-6 text-sm text-muted-foreground">No members have joined yet. Create an invitation to bring someone in.</div>}
+          {members.data?.map(member => <div key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-medium">{member.clerkUserId === session?.userId ? 'You' : `Member ${member.id}`}</p><p className="text-xs text-muted-foreground">{member.clerkUserId === session?.userId ? member.clerkUserId : `Joined ${new Date(member.createdAt).toLocaleDateString()}`}</p></div><label className="text-xs text-muted-foreground">Role<select aria-label={`Role for member ${member.id}`} value={member.role} disabled={updateRole.isPending || member.clerkUserId === session?.userId} onChange={e=>void changeRole(member.id, e.target.value as SchoolRole)} className="ml-2 min-h-10 rounded-md border bg-background px-2 text-sm capitalize text-foreground disabled:opacity-60">{roles.map(role=><option key={role} value={role}>{role[0].toUpperCase()+role.slice(1)}</option>)}</select></label></div>)}
+        </div></div>
+        <div className="rounded-xl border bg-card p-6 shadow-sm"><div className="flex items-center gap-3"><KeyRound className="h-5 w-5 text-primary" /><h3 className="text-lg font-semibold">Invite a teammate</h3></div><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Create a one-time invitation. The code appears only here, so share it securely before leaving this page.</p><form onSubmit={createInvitation} className="mt-6"><label className="block text-sm font-medium">Access level<select value={inviteRole} onChange={e=>setInviteRole(e.target.value as SchoolRole)} className="mt-2 min-h-11 w-full rounded-md border bg-background px-3 text-sm capitalize">{roles.map(role=><option key={role} value={role}>{role[0].toUpperCase()+role.slice(1)}</option>)}</select></label><p className="mt-2 text-xs text-muted-foreground">Admin manages access; Principal and Staff can use the workspace.</p><button type="submit" disabled={createInvite.isPending} className="mt-5 min-h-11 w-full rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50">{createInvite.isPending ? 'Creating…' : 'Create one-time invitation'}</button></form>
+          {inviteToken && <div className="mt-6 rounded-lg border border-primary/25 bg-primary/5 p-4"><p className="text-xs font-semibold uppercase tracking-widest text-primary">One-time code · save it now</p><code className="mt-3 block break-all rounded-md border bg-card p-3 text-sm">{inviteToken}</code><button type="button" onClick={() => void navigator.clipboard.writeText(inviteToken).then(() => setNotice('Invitation code copied.')).catch(() => setError('Copy failed. Select and copy the code manually.'))} className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><Copy className="h-4 w-4" /> Copy code</button><p className="mt-3 text-xs text-muted-foreground">Expires {new Date(expiresAt).toLocaleDateString()}. Your teammate can redeem it on the Join school tab during onboarding.</p></div>}
+        </div>
+      </section>}
+    </main>
+  </div></div>;
 }

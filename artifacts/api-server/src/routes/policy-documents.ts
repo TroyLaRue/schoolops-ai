@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { asc, eq } from "drizzle-orm";
-import { Router, type IRouter } from "express";
+import { and, asc, eq } from "drizzle-orm";
+import { Router, type IRouter, type Response } from "express";
 import { db, policyDocumentsTable } from "@workspace/db";
 import {
   CreatePolicyDocumentBody,
@@ -14,6 +14,18 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+type SchoolContext = { id: number; slug: string; name: string; role: "admin" | "principal" | "staff" };
+
+function getSchool(res: Response): SchoolContext {
+  return res.locals.school as SchoolContext;
+}
+
+function requireAdministrator(res: Response): boolean {
+  if (getSchool(res).role === "admin" || getSchool(res).role === "principal") return true;
+  res.status(403).json({ error: "Administrator or principal access is required." });
+  return false;
+}
 
 const DEMO_POLICIES = [
   {
@@ -124,10 +136,14 @@ function toDateString(value: Date | null | undefined) {
   return value.toISOString().slice(0, 10);
 }
 
-async function seedDemoPolicies() {
+async function seedDemoPolicies(school: SchoolContext) {
   for (const policy of DEMO_POLICIES) {
     await db.insert(policyDocumentsTable).values({
       ...policy,
+      schoolId: school.id,
+      sourceId: school.slug === "oakridge-middle"
+        ? policy.sourceId
+        : `${policy.sourceId}-${school.slug === "pinecrest-academy" ? "B" : school.slug}`,
       status: "active",
       sourceKind: "demo",
       syntheticOnly: true,
@@ -136,8 +152,11 @@ async function seedDemoPolicies() {
 }
 
 router.get("/policy-documents", async (_req, res): Promise<void> => {
-  await seedDemoPolicies();
-  const documents = await db.select().from(policyDocumentsTable).orderBy(
+  const school = getSchool(res);
+  await seedDemoPolicies(school);
+  const documents = await db.select().from(policyDocumentsTable).where(
+    eq(policyDocumentsTable.schoolId, school.id),
+  ).orderBy(
     asc(policyDocumentsTable.category),
     asc(policyDocumentsTable.title),
   );
@@ -145,6 +164,8 @@ router.get("/policy-documents", async (_req, res): Promise<void> => {
 });
 
 router.post("/policy-documents", async (req, res): Promise<void> => {
+  if (!requireAdministrator(res)) return;
+  const school = getSchool(res);
   const parsed = CreatePolicyDocumentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Only reviewed synthetic text or Markdown policy documents can be added." });
@@ -156,6 +177,7 @@ router.post("/policy-documents", async (req, res): Promise<void> => {
   }
 
   const [document] = await db.insert(policyDocumentsTable).values({
+    schoolId: school.id,
     sourceId: `POL-UPL-${randomUUID()}`,
     title: parsed.data.title.trim(),
     category: parsed.data.category,
@@ -178,6 +200,8 @@ router.post("/policy-documents", async (req, res): Promise<void> => {
 });
 
 router.patch("/policy-documents/:id", async (req, res): Promise<void> => {
+  if (!requireAdministrator(res)) return;
+  const school = getSchool(res);
   const params = UpdatePolicyDocumentParams.safeParse(req.params);
   const parsed = UpdatePolicyDocumentBody.safeParse(req.body);
   if (!params.success || !parsed.success) {
@@ -190,7 +214,10 @@ router.patch("/policy-documents/:id", async (req, res): Promise<void> => {
     ...update,
     effectiveDate: toDateString(update.effectiveDate),
     updatedAt: new Date(),
-  }).where(eq(policyDocumentsTable.id, params.data.id)).returning();
+  }).where(and(
+    eq(policyDocumentsTable.id, params.data.id),
+    eq(policyDocumentsTable.schoolId, school.id),
+  )).returning();
 
   if (!document) {
     res.status(404).json({ error: "Policy document not found." });
@@ -200,6 +227,8 @@ router.patch("/policy-documents/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/policy-documents/:id", async (req, res): Promise<void> => {
+  if (!requireAdministrator(res)) return;
+  const school = getSchool(res);
   const params = DeletePolicyDocumentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: "Invalid policy document id." });
@@ -207,7 +236,10 @@ router.delete("/policy-documents/:id", async (req, res): Promise<void> => {
   }
 
   const [document] = await db.delete(policyDocumentsTable)
-    .where(eq(policyDocumentsTable.id, params.data.id))
+    .where(and(
+      eq(policyDocumentsTable.id, params.data.id),
+      eq(policyDocumentsTable.schoolId, school.id),
+    ))
     .returning({ id: policyDocumentsTable.id });
   if (!document) {
     res.status(404).json({ error: "Policy document not found." });

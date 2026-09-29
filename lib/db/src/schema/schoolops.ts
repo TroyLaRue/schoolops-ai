@@ -1,9 +1,11 @@
 import { createInsertSchema } from "drizzle-zod";
 import { integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { schoolsTable } from "./schools";
 import { z } from "zod/v4";
 
 export const agentRunsTable = pgTable("schoolops_agent_runs", {
   id: serial("id").primaryKey(),
+  schoolId: integer("school_id").references(() => schoolsTable.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("running"),
   activityLog: jsonb("activity_log").$type<string[]>().notNull().default([]),
   summary: text("summary"),
@@ -14,6 +16,7 @@ export const agentRunsTable = pgTable("schoolops_agent_runs", {
 
 export const agentIssuesTable = pgTable("schoolops_agent_issues", {
   id: serial("id").primaryKey(),
+  schoolId: integer("school_id").references(() => schoolsTable.id, { onDelete: "cascade" }),
   runId: integer("run_id").notNull().references(() => agentRunsTable.id, { onDelete: "cascade" }),
   sourceId: text("source_id").notNull(),
   title: text("title").notNull(),
@@ -27,6 +30,7 @@ export const agentIssuesTable = pgTable("schoolops_agent_issues", {
 
 export const agentActionsTable = pgTable("schoolops_agent_actions", {
   id: serial("id").primaryKey(),
+  schoolId: integer("school_id").references(() => schoolsTable.id, { onDelete: "cascade" }),
   runId: integer("run_id").references(() => agentRunsTable.id, { onDelete: "cascade" }),
   issueId: integer("issue_id").references(() => agentIssuesTable.id, { onDelete: "set null" }),
   sourceId: text("source_id").notNull(),

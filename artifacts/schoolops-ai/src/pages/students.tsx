@@ -5,14 +5,16 @@ import { Card, Badge, Button } from '@/components/ui';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Search, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
-import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
+import { useSchoolOperations } from '@/lib/school-scoped-data';
 
 export default function Students() {
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState<string>('all');
   const [, setLocation] = useLocation();
+  const operations = useSchoolOperations();
+  const students = operations.data?.students ?? [];
   
-  const filteredStudents = NORMALIZED_SCHOOL_DATA.students.filter(student => {
+  const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase()) || 
                           student.id.toLowerCase().includes(search.toLowerCase());
     const matchesRisk = filterRisk === 'all' || student.attendanceRisk === filterRisk;
@@ -26,12 +28,15 @@ export default function Students() {
         <header className="min-h-16 border-b bg-card flex items-center justify-between px-4 py-2 sm:px-6 sticky top-0 z-20">
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Student Directory</h1>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Synthetic Data</Badge>
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{operations.data?.source.label ?? 'Active-school data'}</Badge>
           </div>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto space-y-6">
+            {operations.isLoading && <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">Loading active-school student records…</div>}
+            {operations.isError && <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-destructive">Unable to load this school’s student records. No other-school data is shown. <Button variant="outline" className="ml-3" onClick={() => operations.refetch()}>Retry</Button></div>}
+            {!operations.isLoading && !operations.isError && students.length === 0 && <div className="rounded-lg border border-dashed bg-card p-8 text-center text-muted-foreground">No student records are available for this school.</div>}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
               <div className="relative w-full sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

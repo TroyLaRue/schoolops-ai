@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SchoolOps AI">
+  <rect width="64" height="64" rx="15" fill="#173766"/>
+  <path d="M13 25 32 16l19 9-19 9-19-9Z" fill="#e9f1ff"/>
+  <path d="M20 32v10c7 7 17 8 24 0V32l-12 6-12-6Z" fill="#a6c4f2"/>
+  <path d="M51 25v18" stroke="#b5cbec" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="51" cy="47" r="3" fill="#b5cbec"/>
+</svg>

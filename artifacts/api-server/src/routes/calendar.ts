@@ -1,7 +1,7 @@
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { and, eq } from "drizzle-orm";
-import { Router, type IRouter } from "express";
-import { agentActionsTable, db } from "@workspace/db";
+import { Router, type IRouter, type Response } from "express";
+import { agentActionsTable, db, schoolsTable } from "@workspace/db";
 import {
   CreateCalendarFollowUpBody,
   CreateCalendarFollowUpResponse,
@@ -10,24 +10,21 @@ import {
 
 const router: IRouter = Router();
 
-const SYNTHETIC_STUDENT_IDS = new Set([
-  "STU-1001",
-  "STU-1002",
-  "STU-1003",
-  "STU-1004",
-  "STU-1005",
-  "STU-1006",
-  "STU-1007",
-  "STU-1008",
-  "STU-1009",
-  "STU-1010",
-]);
+type SchoolContext = { id: number; slug: string; name: string; role: "admin" | "principal" | "staff" };
+
+function getSchool(res: Response): SchoolContext {
+  return res.locals.school as SchoolContext;
+}
+
+function requireAdministrator(res: Response): boolean {
+  const { role } = getSchool(res);
+  if (role === "admin" || role === "principal") return true;
+  res.status(403).json({ error: "Administrator or principal access is required." });
+  return false;
+}
 
 interface CalendarProposal {
   studentId: string;
-  studentName: string;
-  summary: string;
-  description: string;
   start: string;
   end: string;
   timeZone: string;
@@ -39,14 +36,10 @@ function parseProposal(content: string | null): CalendarProposal | null {
     const value = JSON.parse(content) as Partial<CalendarProposal>;
     if (
       typeof value.studentId !== "string"
-      || !SYNTHETIC_STUDENT_IDS.has(value.studentId)
-      || typeof value.studentName !== "string"
-      || typeof value.summary !== "string"
-      || typeof value.description !== "string"
       || typeof value.start !== "string"
       || typeof value.end !== "string"
       || typeof value.timeZone !== "string"
-      || value.summary.trim().length === 0
+      || value.timeZone.trim().length === 0
       || Number.isNaN(Date.parse(value.start))
       || Number.isNaN(Date.parse(value.end))
       || Date.parse(value.end) <= Date.parse(value.start)
@@ -60,6 +53,16 @@ function parseProposal(content: string | null): CalendarProposal | null {
 }
 
 router.get("/calendar/status", async (req, res): Promise<void> => {
+  const { role, slug } = getSchool(res);
+  if (slug !== "oakridge-middle") {
+    res.json(GetCalendarStatusResponse.parse({
+      connected: false,
+      canCreate: false,
+      accountLabel: "No calendar connected for this school",
+    }));
+    return;
+  }
+  const canManage = role === "admin" || role === "principal";
   try {
     const connectors = new ReplitConnectors();
     const response = await connectors.proxy(
@@ -82,7 +85,7 @@ router.get("/calendar/status", async (req, res): Promise<void> => {
     const canCreate = calendarList.items?.some((item) => item.accessRole === "owner" || item.accessRole === "writer") === true;
     res.json(GetCalendarStatusResponse.parse({
       connected: true,
-      canCreate,
+      canCreate: canManage && canCreate,
       accountLabel: "Connected Google Calendar",
     }));
   } catch (error) {
@@ -96,6 +99,12 @@ router.get("/calendar/status", async (req, res): Promise<void> => {
 });
 
 router.post("/calendar/follow-ups", async (req, res): Promise<void> => {
+  if (!requireAdministrator(res)) return;
+  const school = getSchool(res);
+  if (school.slug !== "oakridge-middle") {
+    res.status(403).json({ error: "The shared demo calendar is not connected for this school." });
+    return;
+  }
   const parsed = CreateCalendarFollowUpBody.safeParse(req.body);
   if (!parsed.success) {
     req.log.warn({ validationError: parsed.error.message }, "Rejected unsafe Calendar follow-up request");
@@ -105,6 +114,7 @@ router.post("/calendar/follow-ups", async (req, res): Promise<void> => {
 
   const [action] = await db.select().from(agentActionsTable).where(and(
     eq(agentActionsTable.id, parsed.data.actionId),
+    eq(agentActionsTable.schoolId, school.id),
     eq(agentActionsTable.type, "task"),
     eq(agentActionsTable.channel, "calendar"),
   )).limit(1);
@@ -119,7 +129,19 @@ router.post("/calendar/follow-ups", async (req, res): Promise<void> => {
   }
 
   const proposal = parseProposal(action.content);
-  if (!proposal) {
+  const [schoolRecord] = await db.select({
+    operationsData: schoolsTable.operationsData,
+    syntheticOnly: schoolsTable.syntheticOnly,
+  })
+    .from(schoolsTable).where(eq(schoolsTable.id, school.id)).limit(1);
+  const students = schoolRecord?.syntheticOnly ? schoolRecord.operationsData?.students : undefined;
+  const matchingStudent = Array.isArray(students)
+    ? students.find((entry: unknown): entry is { id: string; name: string } =>
+      typeof entry === "object" && entry !== null
+      && "id" in entry && typeof entry.id === "string" && entry.id === proposal?.studentId
+      && "name" in entry && typeof entry.name === "string")
+    : undefined;
+  if (!proposal || !matchingStudent) {
     req.log.warn({ actionId: action.id }, "Rejected invalid persisted Calendar proposal");
     res.status(400).json({ error: "The persisted follow-up proposal is invalid or is not synthetic demo data." });
     return;
@@ -131,8 +153,8 @@ router.post("/calendar/follow-ups", async (req, res): Promise<void> => {
     const eventPath = `/calendar/v3/calendars/primary/events?sendUpdates=none`;
     const eventBody = {
       id: eventId,
-      summary: proposal.summary,
-      description: `${proposal.description}\n\nSynthetic SchoolOps demo record: ${proposal.studentId}. No real student data or attendees are included.`,
+      summary: "Synthetic SchoolOps follow-up review",
+      description: `Synthetic SchoolOps follow-up review for ${matchingStudent.name} (${matchingStudent.id}). Review the synthetic record and confirm the appropriate support step. No real student data or attendees are included.`,
       start: { dateTime: proposal.start, timeZone: proposal.timeZone },
       end: { dateTime: proposal.end, timeZone: proposal.timeZone },
       extendedProperties: {
@@ -174,6 +196,7 @@ router.post("/calendar/follow-ups", async (req, res): Promise<void> => {
       completedAt: now,
     }).where(and(
       eq(agentActionsTable.id, action.id),
+      eq(agentActionsTable.schoolId, school.id),
       eq(agentActionsTable.status, "approved"),
     )).returning();
 

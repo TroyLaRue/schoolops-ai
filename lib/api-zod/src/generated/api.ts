@@ -18,6 +18,343 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get the signed-in user's school session
+ */
+export const GetSessionResponse = zod.object({
+  "userId": zod.string(),
+  "currentSchool": zod.union([zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+}),zod.null()]),
+  "memberships": zod.array(zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+}))
+})
+
+
+/**
+ * @summary Claim an unclaimed synthetic demo school
+ */
+export const ClaimDemoSchoolBody = zod.object({
+  "slug": zod.enum(['oakridge-middle', 'pinecrest-academy'])
+})
+
+export const ClaimDemoSchoolResponse = zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+})
+
+
+/**
+ * @summary Create a new synthetic school
+ */
+export const createSchoolBodyNameMin = 2;
+export const createSchoolBodyNameMax = 100;
+
+
+
+export const CreateSchoolBody = zod.object({
+  "name": zod.string().min(createSchoolBodyNameMin).max(createSchoolBodyNameMax)
+})
+
+export const CreateSchoolResponse = zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+})
+
+
+/**
+ * @summary Set the active school from the user's memberships
+ */
+
+
+
+export const SwitchSchoolBody = zod.object({
+  "schoolId": zod.number().int().min(1)
+})
+
+export const SwitchSchoolResponse = zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+})
+
+
+/**
+ * @summary Create a one-time invitation for the active school
+ */
+export const createSchoolInvitationBodyExpiresInDaysDefault = 7;
+export const createSchoolInvitationBodyExpiresInDaysMax = 30;
+
+
+
+export const CreateSchoolInvitationBody = zod.object({
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "expiresInDays": zod.number().int().min(1).max(createSchoolInvitationBodyExpiresInDaysMax).default(createSchoolInvitationBodyExpiresInDaysDefault)
+})
+
+export const CreateSchoolInvitationResponse = zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "token": zod.string(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Redeem a valid, unexpired invitation
+ */
+export const joinSchoolBodyTokenMin = 20;
+export const joinSchoolBodyTokenMax = 200;
+
+
+
+export const JoinSchoolBody = zod.object({
+  "token": zod.string().min(joinSchoolBodyTokenMin).max(joinSchoolBodyTokenMax)
+})
+
+export const JoinSchoolResponse = zod.object({
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+}),
+  "membership": zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+})
+
+
+/**
+ * @summary List members in the active school
+ */
+export const ListSchoolMembersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+export const ListSchoolMembersResponse = zod.array(ListSchoolMembersResponseItem)
+
+
+/**
+ * @summary Update a member's role in the active school
+ */
+export const UpdateSchoolMemberRoleParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateSchoolMemberRoleBody = zod.object({
+  "role": zod.enum(['admin', 'principal', 'staff'])
+})
+
+export const UpdateSchoolMemberRoleResponse = zod.object({
+  "id": zod.number().int(),
+  "schoolId": zod.number().int(),
+  "clerkUserId": zod.string(),
+  "role": zod.enum(['admin', 'principal', 'staff']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "school": zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Update the active school's name or settings
+ */
+export const updateCurrentSchoolBodyNameMin = 2;
+export const updateCurrentSchoolBodyNameMax = 100;
+
+
+
+export const UpdateCurrentSchoolBody = zod.object({
+  "name": zod.string().min(updateCurrentSchoolBodyNameMin).max(updateCurrentSchoolBodyNameMax).optional(),
+  "settings": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+export const UpdateCurrentSchoolResponse = zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "settings": zod.record(zod.string(), zod.unknown()),
+  "syntheticOnly": zod.boolean()
+})
+
+
+/**
+ * @summary Get the active school's synthetic operations data
+ */
+export const GetSchoolOperationsResponse = zod.object({
+  "students": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "grade": zod.number().int(),
+  "attendanceRate": zod.number(),
+  "attendanceRisk": zod.enum(['high', 'medium', 'low']),
+  "missingDocuments": zod.array(zod.string()),
+  "enrollmentStatus": zod.enum(['active', 'pending', 'withdrawn']),
+  "tuitionStatus": zod.enum(['current', 'past_due', 'payment_plan'])
+})),
+  "inquiries": zod.array(zod.object({
+  "id": zod.string(),
+  "family": zod.string(),
+  "student": zod.string(),
+  "grade": zod.number().int(),
+  "submittedDaysAgo": zod.number().int(),
+  "lastFollowUpDaysAgo": zod.number().int().nullable(),
+  "stage": zod.enum(['new', 'contacted', 'tour_scheduled'])
+})),
+  "attendance": zod.object({
+  "overallRate": zod.number(),
+  "historicalRate": zod.number(),
+  "grade11Rate": zod.number(),
+  "grade11Absent": zod.number().int()
+}),
+  "tuition": zod.object({
+  "collectionRate": zod.number(),
+  "currentAccounts": zod.number().int(),
+  "pastDueAccounts": zod.number().int(),
+  "paymentPlanAccounts": zod.number().int()
+}),
+  "source": zod.object({
+  "kind": zod.literal("synthetic"),
+  "label": zod.string(),
+  "generatedAt": zod.coerce.date()
+})
+})
+
+
+/**
  * Verifies that the server can access the connected Gmail demo account without exposing account credentials or its address.
  * @summary Check Gmail connection
  */

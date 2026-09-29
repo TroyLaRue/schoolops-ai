@@ -3,8 +3,7 @@ import { Link, useParams } from 'wouter';
 import { Sidebar } from '@/components/layout/shell';
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui';
 import { buttonVariants } from '@/components/ui/button';
-import { NORMALIZED_SCHOOL_DATA, SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
-import { citationsForCategory, DEMO_POLICY_DOCUMENTS } from '@/data/schoolops-policies';
+import { citationsForCategory } from '@/data/schoolops-policies';
 import { 
   ChevronRight, 
   Sparkles, 
@@ -21,13 +20,10 @@ import {
   BookOpen
 } from 'lucide-react';
 import { 
-  useGetActivityHistory, 
   useUpdateAgentAction, 
   useCreateAgentAction,
   useCreateCalendarFollowUp,
   useGetCalendarStatus,
-  useListPolicyDocuments,
-  getGetActivityHistoryQueryKey, 
   getGetCalendarStatusQueryKey,
   type AgentAction 
 } from '@workspace/api-client-react';
@@ -45,6 +41,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useSchoolOperations, useSchoolActivityHistory, useSchoolPolicyDocuments } from '@/lib/school-scoped-data';
+import { useSchoolSession } from '@/lib/school-session';
 
 function ActionRow({
   action,
@@ -52,12 +50,14 @@ function ActionRow({
   onCreateCalendar,
   calendarReady,
   isCreatingCalendar,
+  canApprove,
 }: {
   action: AgentAction;
   onApprove: (action: AgentAction) => void;
   onCreateCalendar: (action: AgentAction) => void;
   calendarReady: boolean;
   isCreatingCalendar: boolean;
+  canApprove: boolean;
 }) {
   const isPending = action.status === 'pending';
   const isApprovedCalendar = action.status === 'approved' && action.channel === 'calendar';
@@ -92,7 +92,7 @@ function ActionRow({
            <span className="text-[10px] text-muted-foreground">
              {new Date(action.createdAt).toLocaleDateString()}
            </span>
-            {isPending && (
+            {isPending && canApprove && (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onApprove(action)}>
                  Approve for review
              </Button>
@@ -117,13 +117,18 @@ export default function StudentDetail() {
   const params = useParams<{ studentId: string }>();
   const studentId = params?.studentId;
   const queryClient = useQueryClient();
-  const { data: history } = useGetActivityHistory();
+  const operationsQuery = useSchoolOperations();
+  const historyQuery = useSchoolActivityHistory();
+  const history = historyQuery.data;
   const calendarStatus = useGetCalendarStatus();
   const updateAction = useUpdateAgentAction();
   const createAction = useCreateAgentAction();
   const createCalendarEvent = useCreateCalendarFollowUp();
-  const { data: policyDocumentsData } = useListPolicyDocuments();
-  const docs = policyDocumentsData && policyDocumentsData.length > 0 ? policyDocumentsData : DEMO_POLICY_DOCUMENTS;
+  const policiesQuery = useSchoolPolicyDocuments();
+  const docs = policiesQuery.data ?? [];
+  const { currentSchool } = useSchoolSession();
+  const canApprove = currentSchool?.membership.role === 'admin' || currentSchool?.membership.role === 'principal';
+  const sourceLabel = operationsQuery.data?.source.label ?? currentSchool?.school.name ?? 'Active school';
 
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [followUpDate, setFollowUpDate] = useState(() => {
@@ -137,8 +142,8 @@ export default function StudentDetail() {
   const [calendarError, setCalendarError] = useState('');
 
   const student = useMemo(() => 
-    NORMALIZED_SCHOOL_DATA.students.find(s => s.id === studentId),
-  [studentId]);
+    operationsQuery.data?.students.find(s => s.id === studentId),
+  [studentId, operationsQuery.data]);
 
   const relevantActions = useMemo(() => {
     if (!history || !student) return [];
@@ -162,9 +167,10 @@ export default function StudentDetail() {
   const relatedCommunications = relevantActions.filter((action) => action.type === 'communication');
 
   const handleApprove = (action: AgentAction) => {
+    if (!canApprove) return;
     setCalendarError('');
     updateAction.mutate({ id: action.id, data: { status: 'approved' } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() }),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/agent/history'] }),
       onError: () => setCalendarError('The recommendation could not be approved. No calendar event was created.'),
     });
   };
@@ -175,7 +181,7 @@ export default function StudentDetail() {
       { data: { actionId: action.id, approved: true, syntheticDataOnly: true } },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+          queryClient.invalidateQueries({ queryKey: ['/api/agent/history'] });
           queryClient.invalidateQueries({ queryKey: getGetCalendarStatusQueryKey() });
         },
         onError: () => setCalendarError('Google Calendar could not create this follow-up. The approved recommendation remains available to retry.'),
@@ -214,12 +220,18 @@ export default function StudentDetail() {
     }, {
       onSuccess: () => {
         setFollowUpOpen(false);
-        queryClient.invalidateQueries({ queryKey: getGetActivityHistoryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: ['/api/agent/history'] });
       },
       onError: () => setCalendarError('The follow-up recommendation could not be staged. No external event was created.'),
     });
   };
 
+  if (!currentSchool || operationsQuery.isLoading) {
+    return <div className="min-h-screen bg-background flex"><Sidebar /><main className="flex-1 p-8 md:ml-64">Loading active-school student record…</main></div>;
+  }
+  if (operationsQuery.isError) {
+    return <div className="min-h-screen bg-background flex"><Sidebar /><main className="flex-1 p-8 md:ml-64"><Card className="mx-auto max-w-lg p-8 text-center"><h2 className="text-lg font-semibold">Student data unavailable</h2><p className="my-3 text-sm text-muted-foreground">Could not load records for {currentSchool.school.name}. No other-school data is shown.</p><Button variant="outline" onClick={() => operationsQuery.refetch()}>Retry</Button></Card></main></div>;
+  }
   if (!student) {
     return (
       <div className="min-h-screen bg-background flex">
@@ -234,7 +246,7 @@ export default function StudentDetail() {
              <Card className="max-w-md w-full text-center p-8 border-dashed">
                <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4 opacity-50" />
                <h2 className="text-lg font-semibold mb-2">Student Not Found</h2>
-               <p className="text-sm text-muted-foreground mb-6">We couldn't find a synthetic student record matching ID "{studentId}".</p>
+               <p className="text-sm text-muted-foreground mb-6">We couldn’t find a student record for ID “{studentId}” in {currentSchool.school.name}.</p>
                <Link href="/students" className={cn(buttonVariants({ variant: 'default' }), "gap-2")}>
                  <ArrowLeft className="h-4 w-4" /> Return to Directory
                </Link>
@@ -246,7 +258,7 @@ export default function StudentDetail() {
   }
 
   const flags = [];
-  if (student.attendanceRisk !== 'low') flags.push(`attendance (${student.attendanceRate}% vs ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}% baseline)`);
+  if (student.attendanceRisk !== 'low') flags.push(`attendance (${student.attendanceRate}% risk flag)`);
   if (student.missingDocuments.length > 0) flags.push(`missing documents (${student.missingDocuments.join(', ')})`);
   if (student.tuitionStatus !== 'current') flags.push(`account status (${student.tuitionStatus.replace('_', ' ')})`);
   if (student.enrollmentStatus !== 'active') flags.push(`enrollment status (${student.enrollmentStatus})`);
@@ -270,6 +282,8 @@ export default function StudentDetail() {
                 {calendarError}
               </div>
             )}
+            {historyQuery.isError && <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">This school’s activity history could not be loaded. Related actions and communications are unavailable. <Button variant="outline" className="ml-3" onClick={() => historyQuery.refetch()}>Retry history</Button></div>}
+            {policiesQuery.isError && <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">Current-school policy documents could not be loaded. Policy citations are withheld; no bundled policy fallback is used. <Button variant="outline" className="ml-3" onClick={() => policiesQuery.refetch()}>Retry policies</Button></div>}
             
             <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
               <div>
@@ -277,7 +291,7 @@ export default function StudentDetail() {
                 <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                   <span>{student.id}</span>
                   <span>&bull;</span>
-                  <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Synthetic Data</Badge>
+                  <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">{sourceLabel}</Badge>
                 </div>
               </div>
             </div>
@@ -348,7 +362,7 @@ export default function StudentDetail() {
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-base font-semibold">Profile</CardTitle>
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-medium">{SCHOOL_OPS_DATA_SOURCE.label}</Badge>
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-medium">{sourceLabel}</Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-2">
@@ -391,7 +405,7 @@ export default function StudentDetail() {
                            <div className={cn("h-1.5 rounded-full", student.attendanceRisk === 'high' ? 'bg-destructive' : student.attendanceRisk === 'medium' ? 'bg-warning' : 'bg-success')} style={{ width: `${student.attendanceRate}%` }}></div>
                         </div>
                         <div className="text-xs text-muted-foreground flex justify-between">
-                          <span>Baseline: {NORMALIZED_SCHOOL_DATA.attendance.historicalRate}%</span>
+                          <span>Historical baseline: {operationsQuery.data?.attendance.historicalRate}%</span>
                           <span className="capitalize">{student.attendanceRisk} Risk</span>
                         </div>
                       </div>
@@ -415,7 +429,7 @@ export default function StudentDetail() {
                   <CardHeader className="pb-3 border-b">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-base font-semibold">Compliance Documents</CardTitle>
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-medium">{SCHOOL_OPS_DATA_SOURCE.label}</Badge>
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-medium">{sourceLabel}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -438,14 +452,7 @@ export default function StudentDetail() {
                       <div className="p-4 sm:p-5">
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Completed Documents</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {student.completedDocuments.length > 0 ? student.completedDocuments.map(doc => (
-                            <div key={doc} className="flex items-center gap-3 bg-background border rounded-md p-3">
-                              <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                              <div className="font-medium text-sm text-muted-foreground">{doc}</div>
-                            </div>
-                          )) : (
-                            <div className="text-sm text-muted-foreground col-span-full">No standard documents recorded.</div>
-                          )}
+                          <div className="text-sm text-muted-foreground col-span-full">Completed-document details are not included in the active-school operations response.</div>
                         </div>
                       </div>
                     </div>
@@ -470,6 +477,7 @@ export default function StudentDetail() {
                                  key={action.id}
                                  action={action}
                                  onApprove={handleApprove}
+                                 canApprove={canApprove}
                                  onCreateCalendar={handleCreateCalendar}
                                  calendarReady={calendarStatus.data?.canCreate === true}
                                  isCreatingCalendar={createCalendarEvent.isPending}
@@ -543,6 +551,7 @@ export default function StudentDetail() {
                              key={action.id}
                              action={action}
                              onApprove={handleApprove}
+                             canApprove={canApprove}
                              onCreateCalendar={handleCreateCalendar}
                              calendarReady={calendarStatus.data?.canCreate === true}
                              isCreatingCalendar={createCalendarEvent.isPending}

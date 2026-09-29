@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  useListPolicyDocuments, 
   useCreatePolicyDocument, 
   useUpdatePolicyDocument, 
   useDeletePolicyDocument, 
@@ -20,11 +19,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, FileText, Upload, Trash2, Edit, RefreshCw, Archive, ArchiveRestore, BookOpen, AlertCircle, FileLock2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useSchoolPolicyDocuments } from '@/lib/school-scoped-data';
 
 export default function Knowledge() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: documents = [], isLoading, error, refetch } = useListPolicyDocuments();
+  const policyQuery = useSchoolPolicyDocuments();
+  const { data: documents = [], isLoading, error, refetch } = policyQuery;
   const createDoc = useCreatePolicyDocument();
   const updateDoc = useUpdatePolicyDocument();
   const deleteDoc = useDeletePolicyDocument();

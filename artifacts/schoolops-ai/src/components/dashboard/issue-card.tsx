@@ -8,9 +8,10 @@ interface IssueCardProps {
   issue: Issue;
   onActionApprove: (issueId: string, actionId: string) => void;
   onActionDismiss: (issueId: string, actionId: string) => void;
+  actionsEnabled?: boolean;
 }
 
-export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCardProps) {
+export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnabled = true }: IssueCardProps) {
   const [selectedAction, setSelectedAction] = useState<RecommendedAction | null>(null);
 
   const getSeverityConfig = (severity: Issue['severity']) => {
@@ -104,7 +105,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                       <>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="min-h-10 text-xs bg-background">
+                            <Button variant="outline" size="sm" className="min-h-10 text-xs bg-background" disabled={!actionsEnabled} title={!actionsEnabled ? 'Run the audit to save these recommendations to this school’s history.' : undefined}>
                               <Eye className="h-3.5 w-3.5 mr-1.5" />
                               Review
                             </Button>
@@ -124,8 +125,8 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                                 <Button variant="outline">Cancel</Button>
                               </DialogClose>
                               <DialogClose asChild>
-                                <Button onClick={() => onActionApprove(issue.id, action.id)}>
-                                  Approve & Execute
+                                 <Button onClick={() => onActionApprove(issue.id, action.id)} disabled={!actionsEnabled}>
+                                   Approve recommendation
                                 </Button>
                               </DialogClose>
                             </div>
@@ -135,6 +136,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                           variant="ghost" 
                           size="icon"
                           className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          disabled={!actionsEnabled}
                           onClick={() => onActionDismiss(issue.id, action.id)}
                           title="Dismiss"
                         >
@@ -143,7 +145,8 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss }: IssueCard
                         <Button 
                           variant="default" 
                           size="sm"
-                          className="min-h-10 flex-1 text-xs sm:flex-none"
+                           className="min-h-10 flex-1 text-xs sm:flex-none"
+                           disabled={!actionsEnabled}
                           onClick={() => onActionApprove(issue.id, action.id)}
                         >
                           <Check className="h-3.5 w-3.5 mr-1.5" />

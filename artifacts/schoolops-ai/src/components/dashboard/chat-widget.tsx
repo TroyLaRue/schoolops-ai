@@ -2,9 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 import { Send, Sparkles, User, Bot, ArrowRight, Database, Lightbulb, ShieldCheck, Check, BookOpen } from 'lucide-react';
 import { AgentAnswer, answerSchoolOpsQuestion } from '@/lib/schoolops-agent';
-import { SCHOOL_OPS_DATA_SOURCE } from '@/data/schoolops-data';
 import { cn } from '@/lib/utils';
-import { useListPolicyDocuments } from '@workspace/api-client-react';
+import { useSchoolOperations, useSchoolPolicyDocuments } from '@/lib/school-scoped-data';
 
 function citationLabel(section: string) {
   const number = section.match(/^(?:Section\s+)?(\d+(?:\.\d+)*)\./i);
@@ -20,13 +19,16 @@ interface Message {
 
 export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'agent', content: 'I have analyzed today\'s data. How can I help you dig deeper into the operations brief?' }
+    { id: '1', role: 'agent', content: 'Ask a question about the active school’s operations. Answers are available after its data and policy documents load.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [stagedActions, setStagedActions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { data: policyDocs } = useListPolicyDocuments();
+  const operationsQuery = useSchoolOperations();
+  const policyQuery = useSchoolPolicyDocuments();
+  const policyDocs = policyQuery.data ?? [];
+  const sourceLabel = operationsQuery.data?.source.label ?? 'Active-school data';
 
   const suggestions = [
     "How many 7th graders are missing documents?",
@@ -45,11 +47,24 @@ export function ChatWidget() {
 
     // Simulate agent response
     setTimeout(() => {
-      const apiDocuments = policyDocs ?? [];
+      if (!operationsQuery.data || policyQuery.isLoading || policyQuery.isError || operationsQuery.isError) {
+        setMessages((prev) => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'agent',
+          answer: {
+            facts: operationsQuery.isError || policyQuery.isError
+              ? 'I could not load this school’s current operations or policy documents. No bundled or other-school information was used.'
+              : 'The active-school operations and policy data are still loading. Please retry your question shortly.',
+            evidence: [],
+          },
+        }]);
+        setIsTyping(false);
+        return;
+      }
       const agentMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'agent',
-        answer: answerSchoolOpsQuestion(text, apiDocuments.length > 0 ? apiDocuments : undefined),
+        answer: answerSchoolOpsQuestion(text, operationsQuery.data, policyDocs),
       };
       setMessages(prev => [...prev, agentMsg]);
       setIsTyping(false);
@@ -70,7 +85,7 @@ export function ChatWidget() {
             <Sparkles className="h-4 w-4 text-primary" />
             Ask SchoolOps
           </CardTitle>
-          <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">Normalized demo data</span>
+           <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">{sourceLabel}</span>
         </div>
       </CardHeader>
       
@@ -92,7 +107,7 @@ export function ChatWidget() {
                       <div>
                         <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider text-primary mb-1.5">
                           <span>Answer</span>
-                          <span className="text-muted-foreground">{SCHOOL_OPS_DATA_SOURCE.label}</span>
+                           <span className="text-muted-foreground">{sourceLabel}</span>
                         </div>
                         <p>{msg.answer.facts}</p>
                         {msg.answer.citations && msg.answer.citations.length > 0 && (

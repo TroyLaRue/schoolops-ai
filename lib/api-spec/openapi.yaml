@@ -18,6 +18,8 @@ tags:
     description: Persistent SchoolOps agent runs and action history
   - name: knowledge
     description: Synthetic SchoolOps policy and procedure knowledge base
+  - name: schools
+    description: School membership and synthetic multi-school operations
 paths:
   /healthz:
     get:
@@ -32,6 +34,166 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /session:
+    get:
+      operationId: getSession
+      tags: [schools]
+      summary: Get the signed-in user's school session
+      responses:
+        "200":
+          description: Session and school memberships
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolSession" }
+        "401": { description: Sign in required }
+  /schools/claim:
+    post:
+      operationId: claimDemoSchool
+      tags: [schools]
+      summary: Claim an unclaimed synthetic demo school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolClaimInput" }
+      responses:
+        "201":
+          description: Claimed school and admin membership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolMembership" }
+        "409": { description: School is already claimed or user is already a member }
+  /schools:
+    post:
+      operationId: createSchool
+      tags: [schools]
+      summary: Create a new synthetic school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolInput" }
+      responses:
+        "201":
+          description: Created school and admin membership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolMembership" }
+  /schools/switch:
+    post:
+      operationId: switchSchool
+      tags: [schools]
+      summary: Set the active school from the user's memberships
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolSwitchInput" }
+      responses:
+        "200":
+          description: Active school membership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolMembership" }
+        "403": { description: User is not a member of the requested school }
+  /schools/invitations:
+    post:
+      operationId: createSchoolInvitation
+      tags: [schools]
+      summary: Create a one-time invitation for the active school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolInvitationInput" }
+      responses:
+        "201":
+          description: Invitation created; token is returned once
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolInvitationCreated" }
+        "403": { description: Admin role required }
+  /schools/join:
+    post:
+      operationId: joinSchool
+      tags: [schools]
+      summary: Redeem a valid, unexpired invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolJoinInput" }
+      responses:
+        "201":
+          description: Invitation redeemed and membership created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolMembership" }
+        "400": { description: "Invalid, expired, or redeemed invitation" }
+  /schools/members:
+    get:
+      operationId: listSchoolMembers
+      tags: [schools]
+      summary: List members in the active school
+      responses:
+        "200":
+          description: Active school members
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SchoolMember" }
+  /schools/members/{id}:
+    patch:
+      operationId: updateSchoolMemberRole
+      tags: [schools]
+      summary: Update a member's role in the active school
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolMemberRoleUpdate" }
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolMember" }
+        "400": { description: Invalid change or last admin protection }
+        "403": { description: Admin role required }
+  /schools/current:
+    patch:
+      operationId: updateCurrentSchool
+      tags: [schools]
+      summary: Update the active school's name or settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolUpdate" }
+      responses:
+        "200":
+          description: Updated active school
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/School" }
+        "403": { description: Admin role required }
+  /operations:
+    get:
+      operationId: getSchoolOperations
+      tags: [schools]
+      summary: Get the active school's synthetic operations data
+      responses:
+        "200":
+          description: Students, inquiries, attendance and tuition for the active school
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolOperations" }
   /gmail/status:
     get:
       operationId: getGmailStatus
@@ -287,6 +449,142 @@ paths:
           description: Policy document not found
 components:
   schemas:
+    SchoolRole:
+      type: string
+      enum: [admin, principal, staff]
+    School:
+      type: object
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        settings: { type: object, additionalProperties: true }
+        syntheticOnly: { type: boolean }
+      required: [id, slug, name, settings, syntheticOnly]
+    SchoolMember:
+      type: object
+      properties:
+        id: { type: integer }
+        schoolId: { type: integer }
+        clerkUserId: { type: string }
+        role: { $ref: "#/components/schemas/SchoolRole" }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        school: { $ref: "#/components/schemas/School" }
+      required: [id, schoolId, clerkUserId, role, isActive, createdAt, school]
+    SchoolMembership:
+      type: object
+      properties:
+        school: { $ref: "#/components/schemas/School" }
+        membership: { $ref: "#/components/schemas/SchoolMember" }
+      required: [school, membership]
+    SchoolSession:
+      type: object
+      properties:
+        userId: { type: string }
+        currentSchool: { oneOf: [{ $ref: "#/components/schemas/SchoolMembership" }, { type: "null" }] }
+        memberships:
+          type: array
+          items: { $ref: "#/components/schemas/SchoolMembership" }
+      required: [userId, currentSchool, memberships]
+    SchoolClaimInput:
+      type: object
+      properties:
+        slug: { type: string, enum: [oakridge-middle, pinecrest-academy] }
+      required: [slug]
+    SchoolInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+      required: [name]
+    SchoolSwitchInput:
+      type: object
+      properties:
+        schoolId: { type: integer, minimum: 1 }
+      required: [schoolId]
+    SchoolInvitationInput:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/SchoolRole" }
+        expiresInDays: { type: integer, minimum: 1, maximum: 30, default: 7 }
+      required: [role]
+    SchoolInvitationCreated:
+      type: object
+      properties:
+        id: { type: integer }
+        schoolId: { type: integer }
+        role: { $ref: "#/components/schemas/SchoolRole" }
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
+      required: [id, schoolId, role, token, expiresAt]
+    SchoolJoinInput:
+      type: object
+      properties:
+        token: { type: string, minLength: 20, maxLength: 200 }
+      required: [token]
+    SchoolMemberRoleUpdate:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/SchoolRole" }
+      required: [role]
+    SchoolUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        settings: { type: object, additionalProperties: true }
+    SchoolStudent:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        grade: { type: integer }
+        attendanceRate: { type: number }
+        attendanceRisk: { type: string, enum: [high, medium, low] }
+        missingDocuments: { type: array, items: { type: string } }
+        enrollmentStatus: { type: string, enum: [active, pending, withdrawn] }
+        tuitionStatus: { type: string, enum: [current, past_due, payment_plan] }
+      required: [id, name, grade, attendanceRate, attendanceRisk, missingDocuments, enrollmentStatus, tuitionStatus]
+    SchoolInquiry:
+      type: object
+      properties:
+        id: { type: string }
+        family: { type: string }
+        student: { type: string }
+        grade: { type: integer }
+        submittedDaysAgo: { type: integer }
+        lastFollowUpDaysAgo: { type: [integer, "null"] }
+        stage: { type: string, enum: [new, contacted, tour_scheduled] }
+      required: [id, family, student, grade, submittedDaysAgo, lastFollowUpDaysAgo, stage]
+    SchoolOperations:
+      type: object
+      properties:
+        students: { type: array, items: { $ref: "#/components/schemas/SchoolStudent" } }
+        inquiries: { type: array, items: { $ref: "#/components/schemas/SchoolInquiry" } }
+        attendance:
+          type: object
+          properties:
+            overallRate: { type: number }
+            historicalRate: { type: number }
+            grade11Rate: { type: number }
+            grade11Absent: { type: integer }
+          required: [overallRate, historicalRate, grade11Rate, grade11Absent]
+        tuition:
+          type: object
+          properties:
+            collectionRate: { type: number }
+            currentAccounts: { type: integer }
+            pastDueAccounts: { type: integer }
+            paymentPlanAccounts: { type: integer }
+          required: [collectionRate, currentAccounts, pastDueAccounts, paymentPlanAccounts]
+        source:
+          type: object
+          properties:
+            kind: { type: string, const: synthetic }
+            label: { type: string }
+            generatedAt: { type: string, format: date-time }
+          required: [kind, label, generatedAt]
+      required: [students, inquiries, attendance, tuition, source]
     HealthStatus:
       type: object
       properties:

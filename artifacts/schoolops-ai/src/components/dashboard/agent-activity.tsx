@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { CardContent } from '@/components/ui/card';
 import { Terminal, RefreshCw, CheckCircle2 } from 'lucide-react';
-import { MOCK_ACTIVITY_LOG } from '@/data/mock';
 import { cn } from '@/lib/utils';
 
 interface AgentActivityProps {
   isRunning: boolean;
   onComplete?: () => void;
   hasRunBefore: boolean;
+  activityLog: string[];
 }
 
-export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActivityProps) {
+export function AgentActivity({ isRunning, onComplete, hasRunBefore, activityLog }: AgentActivityProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const safeLogs = useMemo(
@@ -21,7 +21,7 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
   
   useEffect(() => {
     if (!isRunning && hasRunBefore) {
-      setLogs(MOCK_ACTIVITY_LOG);
+      setLogs(activityLog);
       return;
     }
     
@@ -35,11 +35,11 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
     let currentIndex = 0;
     
     const interval = setInterval(() => {
-      if (currentIndex < MOCK_ACTIVITY_LOG.length) {
+      if (currentIndex < activityLog.length) {
         // Capture the entry before incrementing. React may evaluate the state
         // updater after this callback returns, when currentIndex has already
         // advanced (and can point past the end of the array).
-        const nextLog = MOCK_ACTIVITY_LOG[currentIndex];
+        const nextLog = activityLog[currentIndex];
         if (nextLog !== undefined) {
           setLogs(prev => [...prev, nextLog]);
         }
@@ -51,7 +51,7 @@ export function AgentActivity({ isRunning, onComplete, hasRunBefore }: AgentActi
     }, 600); // Fast enough to be demo-able (600ms * 10 = ~6 seconds)
 
     return () => clearInterval(interval);
-  }, [isRunning, hasRunBefore, onComplete]);
+  }, [isRunning, hasRunBefore, onComplete, activityLog]);
 
   useEffect(() => {
     if (scrollRef.current) {

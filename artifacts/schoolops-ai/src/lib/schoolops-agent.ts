@@ -1,6 +1,5 @@
-import { NORMALIZED_SCHOOL_DATA } from '@/data/schoolops-data';
+import type { SchoolOperations } from '@workspace/api-client-react';
 import {
-  DEMO_POLICY_DOCUMENTS,
   citationsForCategory,
   searchPolicySections,
   type PolicyCitation,
@@ -24,13 +23,15 @@ export interface AgentAnswer {
   recommendationBasis?: 'policy-grounded' | 'general-suggestion';
 }
 
-function studentReasons(student: typeof NORMALIZED_SCHOOL_DATA.students[number]) {
+type OperationsStudent = SchoolOperations['students'][number];
+
+function studentReasons(student: OperationsStudent, historicalRate: number) {
   const reasons: string[] = [];
   if (student.missingDocuments.length > 0) {
     reasons.push(`Missing required document: ${student.missingDocuments.join(', ')}`);
   }
   if (student.attendanceRisk !== 'low') {
-    reasons.push(`${student.attendanceRate}% attendance (${student.attendanceRisk} risk; school historical baseline ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}%)`);
+    reasons.push(`${student.attendanceRate}% attendance (${student.attendanceRisk} risk; school historical baseline ${historicalRate}%)`);
   }
   if (student.tuitionStatus !== 'current') {
     reasons.push(`Account status: ${student.tuitionStatus.replace('_', ' ')}`);
@@ -41,12 +42,12 @@ function studentReasons(student: typeof NORMALIZED_SCHOOL_DATA.students[number])
   return reasons.length ? reasons : ['No current exception flags'];
 }
 
-function toStudentEvidence(student: typeof NORMALIZED_SCHOOL_DATA.students[number]): StudentEvidence {
+function toStudentEvidence(student: OperationsStudent, historicalRate: number): StudentEvidence {
   return {
     id: student.id,
     name: student.name,
     grade: student.grade,
-    reasons: studentReasons(student),
+    reasons: studentReasons(student, historicalRate),
   };
 }
 
@@ -58,10 +59,10 @@ function isStudentAttentionQuestion(question: string) {
 }
 
 function gradeFromQuestion(question: string) {
-  const numeric = question.match(/\b(6|7|8|9|10|11|12)(?:th|st|nd|rd)?\b/i);
+  const numeric = question.match(/\b(5|6|7|8|9|10|11|12)(?:th|st|nd|rd)?\b/i);
   if (numeric) return Number(numeric[1]);
   const words: Record<string, number> = {
-    sixth: 6, seventh: 7, eighth: 8, ninth: 9,
+    fifth: 5, sixth: 6, seventh: 7, eighth: 8, ninth: 9,
     tenth: 10, eleventh: 11, twelfth: 12,
   };
   return Object.entries(words).find(([word]) => question.toLowerCase().includes(word))?.[1];
@@ -96,13 +97,14 @@ function concisePolicyAnswer(question: string, citation: PolicyCitation): string
 
 export function answerSchoolOpsQuestion(
   rawQuestion: string,
-  policyDocuments: PolicyDocumentLike[] = DEMO_POLICY_DOCUMENTS,
+  operations: SchoolOperations,
+  policyDocuments: PolicyDocumentLike[],
 ): AgentAnswer {
   const question = rawQuestion.toLowerCase();
   const grade = gradeFromQuestion(rawQuestion);
   const scopedStudents = grade
-    ? NORMALIZED_SCHOOL_DATA.students.filter((student) => student.grade === grade)
-    : NORMALIZED_SCHOOL_DATA.students;
+    ? operations.students.filter((student) => student.grade === grade)
+    : operations.students;
 
   const attendanceRuleQuestion = /\b(attendance|absen(?:ce|ces|t)|unexcused)\b/.test(question)
     && (/\b(?:85|90)\s*(?:%|percent)(?!\w)/.test(question) || /\b(?:three|3)\s+consecutive\b/.test(question) || /\bthreshold\b/.test(question))
@@ -139,17 +141,17 @@ export function answerSchoolOpsQuestion(
         ? (document: string) => /physical/i.test(document)
         : () => true;
     const students = scopedStudents.filter((student) => student.missingDocuments.some(requestedDocument));
-    const scope = grade ? `Grade ${grade}` : 'the synthetic directory';
+    const scope = grade ? `Grade ${grade}` : 'the active-school directory';
     const citations = citationsForCategory('enrollment', policyDocuments, ['immunization', 'missing-document']);
     return {
       facts: `${students.length} student${students.length === 1 ? '' : 's'} in ${scope} have missing required documents.`,
       evidence: students.length
         ? students.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: missing ${student.missingDocuments.filter(requestedDocument).join(', ')}`)
-        : [`No missing-document flags found among ${scopedStudents.length} matching synthetic records.`],
+        : [`No missing-document flags found among ${scopedStudents.length} matching active-school records.`],
       recommendation: students.length ? 'Prioritize records with a compliance deadline, then request the specific missing item from each family.' : 'No document follow-up is recommended for this group.',
       suggestedAction: students.length ? `Draft document reminders for ${students.length} famil${students.length === 1 ? 'y' : 'ies'}` : undefined,
       studentRecords: students.map((student) => ({
-        ...toStudentEvidence(student),
+        ...toStudentEvidence(student, operations.attendance.historicalRate),
         reasons: student.missingDocuments.filter(requestedDocument).map((document) => `Missing required document: ${document}`),
       })),
       citations,
@@ -158,7 +160,7 @@ export function answerSchoolOpsQuestion(
   }
 
   if (question.includes('inquir') || question.includes('admission') || question.includes('follow-up') || question.includes('follow up')) {
-    const overdue = NORMALIZED_SCHOOL_DATA.inquiries.filter((inquiry) =>
+    const overdue = operations.inquiries.filter((inquiry) =>
       inquiry.submittedDaysAgo >= 2 &&
       (inquiry.lastFollowUpDaysAgo === null || inquiry.lastFollowUpDaysAgo >= 2),
     );
@@ -175,10 +177,10 @@ export function answerSchoolOpsQuestion(
     const flagged = scopedStudents.filter((student) => student.tuitionStatus !== 'current');
     const citations = citationsForCategory('tuition', policyDocuments, ['human review', 'account flags']);
     return {
-      facts: `${NORMALIZED_SCHOOL_DATA.tuition.collectionRate}% of tuition is collected. ${NORMALIZED_SCHOOL_DATA.tuition.pastDueAccounts} accounts are past due and ${NORMALIZED_SCHOOL_DATA.tuition.paymentPlanAccounts} are on payment plans school-wide.`,
+      facts: `${operations.tuition.collectionRate}% of tuition is collected. ${operations.tuition.pastDueAccounts} accounts are past due and ${operations.tuition.paymentPlanAccounts} are on payment plans school-wide.`,
       evidence: [
         ...flagged.map((student) => `${student.id} · ${student.name}: ${student.tuitionStatus === 'past_due' ? 'past due' : 'payment plan'}`),
-        `Synthetic finance summary: ${NORMALIZED_SCHOOL_DATA.tuition.currentAccounts} current accounts`,
+        `Active-school finance summary: ${operations.tuition.currentAccounts} current accounts`,
       ],
       recommendation: 'Review past-due balances by age and existing payment arrangements before contacting families.',
       suggestedAction: flagged.length ? `Prepare an account-review task for ${flagged.length} visible flagged record${flagged.length === 1 ? '' : 's'}` : undefined,
@@ -190,16 +192,19 @@ export function answerSchoolOpsQuestion(
   if (question.includes('attendance') || question.includes('absent') || question.includes('risk')) {
     const atRisk = scopedStudents.filter((student) => student.attendanceRisk !== 'low');
     const citations = citationsForCategory('attendance', policyDocuments, ['daily attendance', 'support response']);
+    const grade11Concern = operations.attendance.historicalRate - operations.attendance.grade11Rate >= 10;
     return {
-      facts: `Today's school-wide attendance is ${NORMALIZED_SCHOOL_DATA.attendance.overallRate}%, compared with a ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}% historical average. Grade 11 is lowest at ${NORMALIZED_SCHOOL_DATA.attendance.grade11Rate}% with ${NORMALIZED_SCHOOL_DATA.attendance.grade11Absent} absences.`,
+      facts: `Today's school-wide attendance is ${operations.attendance.overallRate}%, compared with a ${operations.attendance.historicalRate}% historical average.${grade11Concern ? ` Grade 11 is at ${operations.attendance.grade11Rate}% with ${operations.attendance.grade11Absent} absences.` : ''}`,
       evidence: atRisk.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${student.attendanceRate}% attendance (${student.attendanceRisk} risk)`),
-      recommendation: 'Investigate the Grade 11 variance first, then review high-risk students for recurring absence patterns.',
-      suggestedAction: 'Draft a check-in request for Grade 11 advisors',
+      recommendation: grade11Concern
+        ? 'Investigate the Grade 11 variance first, then review high-risk students for recurring absence patterns.'
+        : 'Review flagged attendance records for recurring absence patterns before planning follow-up.',
+      suggestedAction: grade11Concern ? 'Draft a check-in request for Grade 11 advisors' : undefined,
       studentRecords: atRisk.map((student) => ({
-        ...toStudentEvidence(student),
+        ...toStudentEvidence(student, operations.attendance.historicalRate),
         reasons: [
           `${student.attendanceRate}% attendance (${student.attendanceRisk} risk)`,
-          `Compared with school historical baseline of ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}%`,
+          `Compared with school historical baseline of ${operations.attendance.historicalRate}%`,
         ],
       })),
       citations,
@@ -208,7 +213,7 @@ export function answerSchoolOpsQuestion(
   }
 
   if (isStudentAttentionQuestion(question)) {
-    const flaggedStudents = scopedStudents.filter((student) => studentReasons(student)[0] !== 'No current exception flags');
+    const flaggedStudents = scopedStudents.filter((student) => studentReasons(student, operations.attendance.historicalRate)[0] !== 'No current exception flags');
     const categories = new Set<string>();
     flaggedStudents.forEach((student) => {
       if (student.attendanceRisk !== 'low') categories.add('attendance');
@@ -217,14 +222,14 @@ export function answerSchoolOpsQuestion(
     });
     const citations = [...categories].flatMap((category) => citationsForCategory(category as 'attendance' | 'enrollment' | 'tuition', policyDocuments)).slice(0, 3);
     return {
-      facts: `${flaggedStudents.length} matching student record${flaggedStudents.length === 1 ? '' : 's'} have one or more current attention flags in the normalized SchoolOps data.`,
+      facts: `${flaggedStudents.length} matching student record${flaggedStudents.length === 1 ? '' : 's'} have one or more current attention flags in the active-school operations data.`,
       evidence: [
-        ...flaggedStudents.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${studentReasons(student).join('; ')}`),
+        ...flaggedStudents.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${studentReasons(student, operations.attendance.historicalRate).join('; ')}`),
         'Broader operational context is tracked separately in the attendance, admissions, and finance summaries.',
       ],
       recommendation: 'Review students with overlapping attendance, document, or account flags first, then route each follow-up through the appropriate school team.',
       suggestedAction: flaggedStudents.length ? `Stage follow-up review for ${flaggedStudents.length} flagged student record${flaggedStudents.length === 1 ? '' : 's'}` : undefined,
-      studentRecords: flaggedStudents.map(toStudentEvidence),
+      studentRecords: flaggedStudents.map((student) => toStudentEvidence(student, operations.attendance.historicalRate)),
       citations,
       recommendationBasis: citations.length ? 'policy-grounded' : 'general-suggestion',
     };
@@ -235,16 +240,24 @@ export function answerSchoolOpsQuestion(
       ...citationsForCategory('enrollment', policyDocuments, ['missing-document']),
       ...citationsForCategory('attendance', policyDocuments, ['urgent patterns']),
     ];
+    const missingCount = operations.students.filter((student) => student.missingDocuments.length > 0).length;
+    const overdueCount = operations.inquiries.filter((item) => item.submittedDaysAgo >= 2 && (item.lastFollowUpDaysAgo === null || item.lastFollowUpDaysAgo >= 2)).length;
+    const priorities = [
+      missingCount > 0 ? `${missingCount} student records have missing-document flags` : '',
+      operations.attendance.overallRate < operations.attendance.historicalRate ? `attendance is ${operations.attendance.overallRate}% vs. ${operations.attendance.historicalRate}% historical` : '',
+      overdueCount > 0 ? `${overdueCount} inquiries may need follow-up` : '',
+      operations.tuition.pastDueAccounts > 0 ? `${operations.tuition.pastDueAccounts} accounts are past due` : '',
+    ].filter(Boolean);
     return {
-      facts: 'Today has two critical priorities: missing compliance documents and the Grade 11 attendance anomaly. Aging admissions inquiries need attention; tuition collection is healthy overall.',
+      facts: priorities.length ? `Active-school review priorities: ${priorities.join('; ')}.` : 'No exception patterns were identified in the available active-school operations summary.',
       evidence: [
-        'Operations brief · Required Documents: critical',
-        `Attendance feed · Grade 11: ${NORMALIZED_SCHOOL_DATA.attendance.grade11Rate}% vs. ${NORMALIZED_SCHOOL_DATA.attendance.historicalRate}% baseline`,
-        `Admissions CRM · ${NORMALIZED_SCHOOL_DATA.inquiries.filter((item) => item.submittedDaysAgo >= 2 && (item.lastFollowUpDaysAgo === null || item.lastFollowUpDaysAgo >= 2)).length} overdue inquiries`,
-        `Finance summary · ${NORMALIZED_SCHOOL_DATA.tuition.collectionRate}% collected`,
+        `Student directory · ${missingCount} records have missing-document flags`,
+        `Attendance feed · ${operations.attendance.overallRate}% overall vs. ${operations.attendance.historicalRate}% historical baseline`,
+        `Admissions · ${operations.inquiries.filter((item) => item.submittedDaysAgo >= 2 && (item.lastFollowUpDaysAgo === null || item.lastFollowUpDaysAgo >= 2)).length} overdue inquiries`,
+        `Finance summary · ${operations.tuition.collectionRate}% collected`,
       ],
-      recommendation: 'Address compliance before today’s deadline, investigate Grade 11 attendance by noon, then clear overdue admissions follow-ups.',
-      suggestedAction: 'Create a prioritized follow-up task list',
+      recommendation: 'Verify the source records and applicable school policy before assigning or approving any follow-up.',
+      suggestedAction: priorities.length ? 'Stage prioritized follow-up for human review' : undefined,
       citations,
       recommendationBasis: citations.length ? 'policy-grounded' : 'general-suggestion',
     };
@@ -260,10 +273,10 @@ export function answerSchoolOpsQuestion(
       ...citationsForCategory('tuition', policyDocuments),
     ];
     return {
-      facts: `${scopedStudents.length} matching synthetic student records were found: ${highRisk} high attendance risk, ${missingDocs} with missing documents, and ${accountFlags} with account flags.`,
+      facts: `${scopedStudents.length} matching active-school student records were found: ${highRisk} high attendance risk, ${missingDocs} with missing documents, and ${accountFlags} with account flags.`,
       evidence: scopedStudents.map((student) => `${student.id} · ${student.name}, Grade ${student.grade}: ${student.enrollmentStatus}; ${student.attendanceRate}% attendance`),
       recommendation: 'Review students with overlapping attendance, compliance, or account flags first.',
-      studentRecords: scopedStudents.map(toStudentEvidence),
+      studentRecords: scopedStudents.map((student) => toStudentEvidence(student, operations.attendance.historicalRate)),
       citations,
       recommendationBasis: citations.length ? 'policy-grounded' : 'general-suggestion',
     };
@@ -271,7 +284,7 @@ export function answerSchoolOpsQuestion(
 
   return {
     facts: 'I could not map that question to a supported school-operations dataset.',
-    evidence: ['Available synthetic sources: student directory, attendance feed, document status, admissions inquiries, tuition summary, and today’s operations brief.'],
+    evidence: ['Available active-school sources: student directory, attendance, document status, admissions inquiries, tuition summary, and operations brief.'],
     recommendation: 'Try asking about attendance, missing documents, inquiries, tuition flags, a grade level, or today’s priorities.',
     recommendationBasis: 'general-suggestion',
   };

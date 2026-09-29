@@ -24,6 +24,8 @@ import {
   Stethoscope,
   WalletCards,
 } from 'lucide-react';
+import { useSchoolOperations } from '@/lib/school-scoped-data';
+import { useSchoolSession } from '@/lib/school-session';
 
 type ConnectorStatus = 'connected' | 'demo' | 'planned' | 'available';
 
@@ -117,6 +119,8 @@ function IntegrationCard({
 }
 
 export default function Integrations() {
+  const operations = useSchoolOperations();
+  const { currentSchool } = useSchoolSession();
   const gmailConnection = useGetGmailStatus();
   const calendarConnection = useGetCalendarStatus();
   const [showSmartcareMapping, setShowSmartcareMapping] = useState(false);
@@ -177,6 +181,18 @@ export default function Integrations() {
             </section>
 
             <section className="space-y-4">
+              <Card>
+                <CardHeader className="border-b bg-muted/20">
+                  <CardTitle className="flex items-center gap-2 text-base"><Database className="h-4 w-4 text-primary" /> Active-school operations feed</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  {operations.isLoading ? <p className="text-sm text-muted-foreground">Loading authenticated operations for {currentSchool?.school.name ?? 'the active school'}…</p>
+                    : operations.isError ? <div className="text-sm text-destructive">Could not load this school’s operations feed. No other-school records are used.</div>
+                      : operations.data ? <div><p className="font-medium">{operations.data.source.label}</p><p className="mt-1 text-xs text-muted-foreground">Synthetic active-school response generated {new Date(operations.data.source.generatedAt).toLocaleString()} · {operations.data.students.length} student records · {operations.data.inquiries.length} inquiries</p></div>
+                        : <p className="text-sm text-muted-foreground">No active-school operations response is available.</p>}
+                  {operations.isError && <Button variant="outline" size="sm" onClick={() => operations.refetch()}>Retry</Button>}
+                </CardContent>
+              </Card>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Connector registry</p>

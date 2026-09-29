@@ -5,6 +5,197 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type SchoolRole = typeof SchoolRole[keyof typeof SchoolRole];
+
+
+export const SchoolRole = {
+  admin: 'admin',
+  principal: 'principal',
+  staff: 'staff',
+} as const;
+
+export type SchoolSettings = { [key: string]: unknown };
+
+export interface School {
+  id: number;
+  slug: string;
+  name: string;
+  settings: SchoolSettings;
+  syntheticOnly: boolean;
+}
+
+export interface SchoolMember {
+  id: number;
+  schoolId: number;
+  clerkUserId: string;
+  role: SchoolRole;
+  isActive: boolean;
+  createdAt: string;
+  school: School;
+}
+
+export interface SchoolMembership {
+  school: School;
+  membership: SchoolMember;
+}
+
+export interface SchoolSession {
+  userId: string;
+  currentSchool: SchoolMembership | null;
+  memberships: SchoolMembership[];
+}
+
+export type SchoolClaimInputSlug = typeof SchoolClaimInputSlug[keyof typeof SchoolClaimInputSlug];
+
+
+export const SchoolClaimInputSlug = {
+  'oakridge-middle': 'oakridge-middle',
+  'pinecrest-academy': 'pinecrest-academy',
+} as const;
+
+export interface SchoolClaimInput {
+  slug: SchoolClaimInputSlug;
+}
+
+export interface SchoolInput {
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  name: string;
+}
+
+export interface SchoolSwitchInput {
+  /** @minimum 1 */
+  schoolId: number;
+}
+
+export interface SchoolInvitationInput {
+  role: SchoolRole;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  expiresInDays?: number;
+}
+
+export interface SchoolInvitationCreated {
+  id: number;
+  schoolId: number;
+  role: SchoolRole;
+  token: string;
+  expiresAt: string;
+}
+
+export interface SchoolJoinInput {
+  /**
+     * @minLength 20
+     * @maxLength 200
+     */
+  token: string;
+}
+
+export interface SchoolMemberRoleUpdate {
+  role: SchoolRole;
+}
+
+export type SchoolUpdateSettings = { [key: string]: unknown };
+
+export interface SchoolUpdate {
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  name?: string;
+  settings?: SchoolUpdateSettings;
+}
+
+export type SchoolStudentAttendanceRisk = typeof SchoolStudentAttendanceRisk[keyof typeof SchoolStudentAttendanceRisk];
+
+
+export const SchoolStudentAttendanceRisk = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export type SchoolStudentEnrollmentStatus = typeof SchoolStudentEnrollmentStatus[keyof typeof SchoolStudentEnrollmentStatus];
+
+
+export const SchoolStudentEnrollmentStatus = {
+  active: 'active',
+  pending: 'pending',
+  withdrawn: 'withdrawn',
+} as const;
+
+export type SchoolStudentTuitionStatus = typeof SchoolStudentTuitionStatus[keyof typeof SchoolStudentTuitionStatus];
+
+
+export const SchoolStudentTuitionStatus = {
+  current: 'current',
+  past_due: 'past_due',
+  payment_plan: 'payment_plan',
+} as const;
+
+export interface SchoolStudent {
+  id: string;
+  name: string;
+  grade: number;
+  attendanceRate: number;
+  attendanceRisk: SchoolStudentAttendanceRisk;
+  missingDocuments: string[];
+  enrollmentStatus: SchoolStudentEnrollmentStatus;
+  tuitionStatus: SchoolStudentTuitionStatus;
+}
+
+export type SchoolInquiryStage = typeof SchoolInquiryStage[keyof typeof SchoolInquiryStage];
+
+
+export const SchoolInquiryStage = {
+  new: 'new',
+  contacted: 'contacted',
+  tour_scheduled: 'tour_scheduled',
+} as const;
+
+export interface SchoolInquiry {
+  id: string;
+  family: string;
+  student: string;
+  grade: number;
+  submittedDaysAgo: number;
+  /** @nullable */
+  lastFollowUpDaysAgo: number | null;
+  stage: SchoolInquiryStage;
+}
+
+export type SchoolOperationsAttendance = {
+  overallRate: number;
+  historicalRate: number;
+  grade11Rate: number;
+  grade11Absent: number;
+};
+
+export type SchoolOperationsTuition = {
+  collectionRate: number;
+  currentAccounts: number;
+  pastDueAccounts: number;
+  paymentPlanAccounts: number;
+};
+
+export type SchoolOperationsSource = {
+  kind: 'synthetic';
+  label: string;
+  generatedAt: string;
+};
+
+export interface SchoolOperations {
+  students: SchoolStudent[];
+  inquiries: SchoolInquiry[];
+  attendance: SchoolOperationsAttendance;
+  tuition: SchoolOperationsTuition;
+  source: SchoolOperationsSource;
+}
+
 export interface HealthStatus {
   status: string;
 }

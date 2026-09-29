@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { Router, type IRouter, type Response } from "express";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db, agentActionsTable, agentIssuesTable, agentRunsTable } from "@workspace/db";
 import {
   CreateAgentActionBody,
@@ -9,6 +9,16 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+type SchoolContext = { id: number; slug: string; name: string; role: "admin" | "principal" | "staff" };
+
+function getSchool(res: Response): SchoolContext {
+  return res.locals.school as SchoolContext;
+}
+
+function isAdministrator(school: SchoolContext): boolean {
+  return school.role === "admin" || school.role === "principal";
+}
 
 type ActionRow = typeof agentActionsTable.$inferSelect;
 type IssueRow = typeof agentIssuesTable.$inferSelect;
@@ -84,6 +94,11 @@ const SEED_ISSUES = [
   },
 ] as const;
 
+const SAFE_SYNTHETIC_EMAIL_TEMPLATE = {
+  subject: "SchoolOps synthetic follow-up test",
+  content: "This is a synthetic SchoolOps email test. It contains no student, family, or school operational information.",
+};
+
 const SEED_COMMUNICATIONS = [
   {
     sourceId: "COM-2041",
@@ -109,13 +124,24 @@ const SEED_COMMUNICATIONS = [
     sourceId: "COM-2043",
     recipient: "11th Grade Advisors",
     channel: "email",
-    subject: "Action Required: Attendance Check",
-    title: "Action Required: Attendance Check",
-    message: "Team, we are seeing an anomalous 81% attendance rate for Grade 11 today. Please check in with absent advisees to determine if this is illness-related or an unapproved skip day. Report findings by 12:00 PM.",
-    reason: "Attendance anomaly detection.",
-    status: "approved",
+    subject: SAFE_SYNTHETIC_EMAIL_TEMPLATE.subject,
+    title: "SchoolOps synthetic follow-up test",
+    message: SAFE_SYNTHETIC_EMAIL_TEMPLATE.content,
+    reason: "Server-provided safe demo email template.",
+    status: "pending",
   },
 ] as const;
+
+const SEED_ISSUE_SOURCE_IDS = new Set(SEED_ISSUES.map((issue) => issue.sourceId));
+const SEED_ACTION_SOURCE_IDS = new Set([
+  ...SEED_ISSUES.flatMap((issue) => issue.actions.map((action) => action.sourceId)),
+  ...SEED_COMMUNICATIONS.map((communication) => communication.sourceId),
+]);
+
+function isOakridgeSeedSourceId(sourceId: string): boolean {
+  return [...SEED_ISSUE_SOURCE_IDS, ...SEED_ACTION_SOURCE_IDS].some((seedId) =>
+    sourceId === seedId || sourceId.startsWith(`${seedId}-`));
+}
 
 const SEED_ACTIVITY = [
   "Initializing Morning Audit...",
@@ -178,12 +204,38 @@ function toRun(row: RunRow, issues: IssueRow[], actions: ActionRow[]) {
   };
 }
 
-async function seedDemoHistory() {
-  const existing = await db.select({ id: agentRunsTable.id }).from(agentRunsTable).limit(1);
-  if (existing.length > 0) return;
+async function seedDemoHistory(school: SchoolContext) {
+  if (school.slug !== "oakridge-middle") return;
+  const existing = await db.select({ id: agentRunsTable.id }).from(agentRunsTable)
+    .where(eq(agentRunsTable.schoolId, school.id)).limit(1);
+  if (existing.length > 0) {
+    const safeDraft = await db.select({ id: agentActionsTable.id }).from(agentActionsTable).where(and(
+      eq(agentActionsTable.schoolId, school.id),
+      eq(agentActionsTable.subject, SAFE_SYNTHETIC_EMAIL_TEMPLATE.subject),
+      eq(agentActionsTable.content, SAFE_SYNTHETIC_EMAIL_TEMPLATE.content),
+    )).limit(1);
+    if (safeDraft.length === 0) {
+      await db.insert(agentActionsTable).values({
+        schoolId: school.id,
+        runId: existing[0].id,
+        sourceId: `COM-SYNTHETIC-EMAIL-${school.id}`,
+        type: "communication",
+        title: SAFE_SYNTHETIC_EMAIL_TEMPLATE.subject,
+        description: "Server-provided synthetic Gmail template for administrator review.",
+        content: SAFE_SYNTHETIC_EMAIL_TEMPLATE.content,
+        recipient: "Connected Gmail test account (self-send)",
+        subject: SAFE_SYNTHETIC_EMAIL_TEMPLATE.subject,
+        channel: "email",
+        reason: "Server-provided safe synthetic email template.",
+        status: "pending",
+      }).onConflictDoNothing();
+    }
+    return;
+  }
 
   await db.transaction(async (tx) => {
     const [run] = await tx.insert(agentRunsTable).values({
+      schoolId: school.id,
       status: "completed",
       activityLog: [...SEED_ACTIVITY],
       summary: "Morning audit completed with 4 findings and 4 recommended actions.",
@@ -195,6 +247,7 @@ async function seedDemoHistory() {
 
     for (const issue of SEED_ISSUES) {
       const [savedIssue] = await tx.insert(agentIssuesTable).values({
+        schoolId: school.id,
         runId: run.id,
         sourceId: issue.sourceId,
         title: issue.title,
@@ -206,6 +259,7 @@ async function seedDemoHistory() {
 
       if (!savedIssue || issue.actions.length === 0) continue;
       await tx.insert(agentActionsTable).values(issue.actions.map((action) => ({
+        schoolId: school.id,
         runId: run.id,
         issueId: savedIssue.id,
         sourceId: action.sourceId,
@@ -218,6 +272,7 @@ async function seedDemoHistory() {
     }
 
     await tx.insert(agentActionsTable).values(SEED_COMMUNICATIONS.map((communication) => ({
+      schoolId: school.id,
       runId: run.id,
       sourceId: communication.sourceId,
       type: "communication",
@@ -229,16 +284,28 @@ async function seedDemoHistory() {
       channel: communication.channel,
       reason: communication.reason,
       status: communication.status,
-      approvedAt: communication.status === "approved" ? new Date(Date.now() - 1000 * 60 * 70) : null,
+      approvedAt: null,
     })));
   });
 }
 
-async function getHistoryData() {
-  await seedDemoHistory();
-  const runs = await db.select().from(agentRunsTable).orderBy(desc(agentRunsTable.startedAt));
-  const issues = await db.select().from(agentIssuesTable).orderBy(asc(agentIssuesTable.id));
-  const actions = await db.select().from(agentActionsTable).orderBy(desc(agentActionsTable.createdAt));
+async function getHistoryData(school: SchoolContext) {
+  await seedDemoHistory(school);
+  const storedRuns = await db.select().from(agentRunsTable)
+    .where(eq(agentRunsTable.schoolId, school.id)).orderBy(desc(agentRunsTable.startedAt));
+  const storedIssues = await db.select().from(agentIssuesTable)
+    .where(eq(agentIssuesTable.schoolId, school.id)).orderBy(asc(agentIssuesTable.id));
+  const storedActions = await db.select().from(agentActionsTable)
+    .where(eq(agentActionsTable.schoolId, school.id)).orderBy(desc(agentActionsTable.createdAt));
+  const copiedSeedRunIds = school.slug === "oakridge-middle"
+    ? new Set<number>()
+    : new Set(storedIssues.filter((issue) => isOakridgeSeedSourceId(issue.sourceId)).map((issue) => issue.runId));
+  const runs = storedRuns.filter((run) => !copiedSeedRunIds.has(run.id));
+  const issues = storedIssues.filter((issue) =>
+    !copiedSeedRunIds.has(issue.runId) && (school.slug === "oakridge-middle" || !isOakridgeSeedSourceId(issue.sourceId)));
+  const actions = storedActions.filter((action) =>
+    !copiedSeedRunIds.has(action.runId ?? -1)
+    && (school.slug === "oakridge-middle" || !isOakridgeSeedSourceId(action.sourceId)));
 
   return {
     runs: runs.map((run) => toRun(
@@ -251,19 +318,50 @@ async function getHistoryData() {
 }
 
 router.get("/history", async (_req, res): Promise<void> => {
-  const data = await getHistoryData();
+  const data = await getHistoryData(getSchool(res));
   res.json(GetActivityHistoryResponse.parse(data));
 });
 
 router.post("/agent-runs", async (req, res): Promise<void> => {
+  const school = getSchool(res);
   const parsed = CreateAgentRunBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid agent run payload." });
     return;
   }
+  const referencedRunIds = parsed.data.issues.flatMap((issue) => issue.actions
+    .map((action) => action.runId).filter((id): id is number => id != null));
+  const referencedIssueIds = parsed.data.issues.flatMap((issue) => issue.actions
+    .map((action) => action.issueId).filter((id): id is number => id != null));
+  if (referencedRunIds.length > 0 || referencedIssueIds.length > 0) {
+    const [referencedRun] = referencedRunIds.length > 0
+      ? await db.select({ id: agentRunsTable.id }).from(agentRunsTable).where(and(
+        eq(agentRunsTable.id, referencedRunIds[0]),
+        eq(agentRunsTable.schoolId, school.id),
+      )).limit(1)
+      : [];
+    const [referencedIssue] = referencedIssueIds.length > 0
+      ? await db.select({ id: agentIssuesTable.id }).from(agentIssuesTable).where(and(
+        eq(agentIssuesTable.id, referencedIssueIds[0]),
+        eq(agentIssuesTable.schoolId, school.id),
+      )).limit(1)
+      : [];
+    if ((referencedRunIds.length > 0 && !referencedRun)
+      || (referencedIssueIds.length > 0 && !referencedIssue)) {
+      res.status(404).json({ error: "Referenced agent records were not found for this school." });
+      return;
+    }
+    res.status(400).json({ error: "New run actions cannot reference existing runs or issues." });
+    return;
+  }
+  if (parsed.data.issues.some((issue) => issue.actions.some((action) => action.status !== "pending"))) {
+    res.status(400).json({ error: "New agent actions must be staged as pending." });
+    return;
+  }
 
   const data = await db.transaction(async (tx) => {
     const [run] = await tx.insert(agentRunsTable).values({
+      schoolId: school.id,
       status: "running",
       activityLog: parsed.data.activityLog,
     }).returning();
@@ -273,6 +371,7 @@ router.post("/agent-runs", async (req, res): Promise<void> => {
     const actionRows: ActionRow[] = [];
     for (const issue of parsed.data.issues) {
       const [savedIssue] = await tx.insert(agentIssuesTable).values({
+        schoolId: school.id,
         runId: run.id,
         sourceId: issue.sourceId,
         title: issue.title,
@@ -285,6 +384,7 @@ router.post("/agent-runs", async (req, res): Promise<void> => {
       issueRows.push(savedIssue);
       if (issue.actions.length > 0) {
         const savedActions = await tx.insert(agentActionsTable).values(issue.actions.map((action) => ({
+          schoolId: school.id,
           runId: run.id,
           issueId: savedIssue.id,
           sourceId: action.sourceId,
@@ -305,10 +405,19 @@ router.post("/agent-runs", async (req, res): Promise<void> => {
 });
 
 router.post("/agent-runs/:id/complete", async (req, res): Promise<void> => {
+  const school = getSchool(res);
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     res.status(400).json({ error: "Invalid agent run id." });
     return;
+  }
+  if (school.slug !== "oakridge-middle") {
+    const copied = await db.select({ sourceId: agentIssuesTable.sourceId }).from(agentIssuesTable)
+      .where(and(eq(agentIssuesTable.runId, id), eq(agentIssuesTable.schoolId, school.id)));
+    if (copied.some((issue) => isOakridgeSeedSourceId(issue.sourceId))) {
+      res.status(404).json({ error: "Agent run not found." });
+      return;
+    }
   }
 
   const [run] = await db.update(agentRunsTable)
@@ -317,7 +426,10 @@ router.post("/agent-runs/:id/complete", async (req, res): Promise<void> => {
       completedAt: new Date(),
       summary: "Morning audit completed. Findings and recommendations are ready for review.",
     })
-    .where(eq(agentRunsTable.id, id))
+    .where(and(
+      eq(agentRunsTable.id, id),
+      eq(agentRunsTable.schoolId, school.id),
+    ))
     .returning();
 
   if (!run) {
@@ -325,19 +437,67 @@ router.post("/agent-runs/:id/complete", async (req, res): Promise<void> => {
     return;
   }
 
-  const issues = await db.select().from(agentIssuesTable).where(eq(agentIssuesTable.runId, id));
-  const actions = await db.select().from(agentActionsTable).where(eq(agentActionsTable.runId, id));
+  const issues = await db.select().from(agentIssuesTable).where(and(
+    eq(agentIssuesTable.runId, id),
+    eq(agentIssuesTable.schoolId, school.id),
+  ));
+  const actions = await db.select().from(agentActionsTable).where(and(
+    eq(agentActionsTable.runId, id),
+    eq(agentActionsTable.schoolId, school.id),
+  ));
   res.json(toRun(run, issues, actions));
 });
 
 router.post("/actions", async (req, res): Promise<void> => {
+  const school = getSchool(res);
   const parsed = CreateAgentActionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid action payload." });
     return;
   }
 
-  const [action] = await db.insert(agentActionsTable).values(parsed.data).returning();
+  if (parsed.data.status !== "pending") {
+    res.status(400).json({ error: "New actions must be staged as pending." });
+    return;
+  }
+  if (parsed.data.runId != null) {
+    const [run] = await db.select({ id: agentRunsTable.id }).from(agentRunsTable).where(and(
+      eq(agentRunsTable.id, parsed.data.runId),
+      eq(agentRunsTable.schoolId, school.id),
+    )).limit(1);
+    if (!run) {
+      res.status(404).json({ error: "Agent run not found." });
+      return;
+    }
+  }
+  if (parsed.data.issueId != null) {
+    const [issue] = await db.select({
+      id: agentIssuesTable.id,
+      runId: agentIssuesTable.runId,
+    }).from(agentIssuesTable).where(and(
+      eq(agentIssuesTable.id, parsed.data.issueId),
+      eq(agentIssuesTable.schoolId, school.id),
+    )).limit(1);
+    if (!issue || (parsed.data.runId != null && issue.runId !== parsed.data.runId)) {
+      res.status(404).json({ error: "Agent issue not found for this school and run." });
+      return;
+    }
+    if (parsed.data.runId == null) {
+      const [run] = await db.select({ id: agentRunsTable.id }).from(agentRunsTable).where(and(
+        eq(agentRunsTable.id, issue.runId),
+        eq(agentRunsTable.schoolId, school.id),
+      )).limit(1);
+      if (!run) {
+        res.status(404).json({ error: "Agent run not found for this school." });
+        return;
+      }
+    }
+  }
+
+  const [action] = await db.insert(agentActionsTable).values({
+    ...parsed.data,
+    schoolId: school.id,
+  }).returning();
   if (!action) {
     res.status(500).json({ error: "Action was not created." });
     return;
@@ -346,6 +506,7 @@ router.post("/actions", async (req, res): Promise<void> => {
 });
 
 router.patch("/actions/:id", async (req, res): Promise<void> => {
+  const school = getSchool(res);
   const id = Number(req.params.id);
   const parsed = UpdateAgentActionBody.safeParse(req.body);
   if (!Number.isInteger(id) || !parsed.success) {
@@ -353,23 +514,43 @@ router.patch("/actions/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [existing] = await db.select().from(agentActionsTable).where(eq(agentActionsTable.id, id)).limit(1);
-  if (!existing) {
+  const [existing] = await db.select().from(agentActionsTable).where(and(
+    eq(agentActionsTable.id, id),
+    eq(agentActionsTable.schoolId, school.id),
+  )).limit(1);
+  if (!existing || (school.slug !== "oakridge-middle" && isOakridgeSeedSourceId(existing.sourceId))) {
     res.status(404).json({ error: "Action not found." });
     return;
   }
 
   const now = new Date();
   const status = parsed.data.status;
+  if (status !== existing.status) {
+    const allowed = existing.status === "pending"
+      ? status === "approved" || status === "dismissed"
+      : existing.status === "approved" && status === "completed";
+    if (!allowed) {
+      res.status(409).json({ error: `Action cannot transition from ${existing.status} to ${status}.` });
+      return;
+    }
+    if ((status === "approved" || status === "dismissed" || status === "completed") && !isAdministrator(school)) {
+      res.status(403).json({ error: "Administrator or principal access is required for this status change." });
+      return;
+    }
+  }
   const [action] = await db.update(agentActionsTable).set({
     status,
     approvedAt: status === "approved" ? now : existing.approvedAt,
     dismissedAt: status === "dismissed" ? now : existing.dismissedAt,
     completedAt: status === "completed" ? now : existing.completedAt,
-  }).where(eq(agentActionsTable.id, id)).returning();
+  }).where(and(
+    eq(agentActionsTable.id, id),
+    eq(agentActionsTable.schoolId, school.id),
+    eq(agentActionsTable.status, existing.status),
+  )).returning();
 
   if (!action) {
-    res.status(404).json({ error: "Action not found." });
+    res.status(409).json({ error: "The action changed before the update could be recorded." });
     return;
   }
   res.json(toAction(action));

@@ -19,3 +19,4 @@
 
 export * from "./schoolops";
 export * from "./policy-documents";
+export * from "./schools";

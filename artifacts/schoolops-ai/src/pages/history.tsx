@@ -13,10 +13,11 @@ import {
   UserRound,
   XCircle,
 } from 'lucide-react';
-import { useGetActivityHistory, type ActivityHistory, type AgentAction } from '@workspace/api-client-react';
+import { type ActivityHistory, type AgentAction } from '@workspace/api-client-react';
 import { Sidebar } from '@/components/layout/shell';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { useSchoolActivityHistory } from '@/lib/school-scoped-data';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'dismissed' | 'completed';
 type TypeFilter = 'all' | 'communication' | 'task';
@@ -147,7 +148,8 @@ function HistoryLoading() {
 }
 
 export default function HistoryPage() {
-  const { data, isLoading, isError } = useGetActivityHistory();
+  const history = useSchoolActivityHistory();
+  const { data, isLoading, isError } = history;
   const [status, setStatus] = useState<StatusFilter>('all');
   const [type, setType] = useState<TypeFilter>('all');
   const [fromDate, setFromDate] = useState('');
@@ -232,7 +234,7 @@ export default function HistoryPage() {
             </Card>
 
             {isLoading && <HistoryLoading />}
-            {isError && <Card><CardContent className="p-8 text-center text-sm text-destructive">Activity history could not be loaded. Check that the API server is running.</CardContent></Card>}
+            {isError && <Card><CardContent className="p-8 text-center text-sm text-destructive">This school’s activity history could not be loaded. No other-school history is shown. <Button variant="outline" className="ml-3" onClick={() => history.refetch()}>Retry</Button></CardContent></Card>}
 
             {!isLoading && !isError && (
               <>
