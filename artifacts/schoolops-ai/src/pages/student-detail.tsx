@@ -330,7 +330,8 @@ export default function StudentDetail() {
                                  <span className="font-semibold text-foreground/90">{citation.title}</span>
                                  <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono">{citation.sourceKind}</Badge>
                                </div>
-                               <div className="text-[10px] text-muted-foreground mb-1.5 font-mono">{citation.section} · v{citation.version}</div>
+                                {citation.filename && <div className="text-[10px] text-muted-foreground mb-1 break-all">{citation.filename}</div>}
+                                <div className="text-[10px] text-muted-foreground mb-1.5 font-mono">{citation.section}{citation.policyId ? ` · ${citation.policyId}` : ''} · v{citation.version}</div>
                                <div className="text-[11px] text-muted-foreground italic border-l-2 pl-2 border-primary/20 leading-relaxed">"{citation.quote}"</div>
                              </div>
                           ));

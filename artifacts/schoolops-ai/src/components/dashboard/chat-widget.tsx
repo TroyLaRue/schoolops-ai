@@ -141,7 +141,8 @@ export function ChatWidget() {
                                  <span className="text-xs font-semibold text-foreground">{citation.title}</span>
                                  <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 rounded-sm font-mono bg-background">{citation.sourceKind}</Badge>
                                </div>
-                               <div className="text-[10px] text-muted-foreground font-mono mb-1.5">{citation.section} · v{citation.version}</div>
+                                {citation.filename && <div className="text-[10px] text-muted-foreground mb-1 break-all">{citation.filename}</div>}
+                                <div className="text-[10px] text-muted-foreground font-mono mb-1.5">{citation.section}{citation.policyId ? ` · ${citation.policyId}` : ''} · v{citation.version}</div>
                                <div className="text-[11px] italic text-muted-foreground border-l-2 pl-2 border-primary/20">"{citation.quote}"</div>
                              </div>
                            ))}

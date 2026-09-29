@@ -77,14 +77,17 @@ export function answerSchoolOpsQuestion(
     ? NORMALIZED_SCHOOL_DATA.students.filter((student) => student.grade === grade)
     : NORMALIZED_SCHOOL_DATA.students;
 
-  const isPolicyQuestion = question.includes('policy')
+  const attendanceRuleQuestion = /\b(attendance|absen(?:ce|ces|t)|unexcused)\b/.test(question)
+    && (/\b(?:85|90)\s*(?:%|percent)(?!\w)/.test(question) || /\b(?:three|3)\s+consecutive\b/.test(question) || /\bthreshold\b/.test(question))
+    && !/\b(how many|which students|list students|show students|count)\b/.test(question);
+  const isPolicyQuestion = attendanceRuleQuestion || question.includes('policy')
     || question.includes('handbook')
     || question.includes('procedure')
     || question.includes('requirement')
     || question.includes('required');
 
   if (isPolicyQuestion) {
-    const citations = searchPolicySections(rawQuestion, policyDocuments);
+    const citations = searchPolicySections(rawQuestion.replace(/\bthree\s+consecutive\b/gi, '3 consecutive'), policyDocuments, 1);
     if (citations.length === 0) {
       return {
         facts: 'I could not find an active policy section in the current SchoolOps knowledge base that answers that question.',
@@ -95,7 +98,7 @@ export function answerSchoolOpsQuestion(
     }
     return {
       facts: citations[0].quote,
-      evidence: citations.slice(1).map((citation) => citation.quote),
+      evidence: [`Policy source: ${citations[0].title}, ${citations[0].section}${citations[0].policyId ? ` (${citations[0].policyId})` : ''}.`],
       recommendation: 'Use this policy as reviewed context, then verify the underlying operational record before approving any action.',
       citations,
       recommendationBasis: 'policy-grounded',

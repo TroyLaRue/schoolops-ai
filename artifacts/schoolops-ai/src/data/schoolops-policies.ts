@@ -4,6 +4,7 @@ export interface PolicyDocumentLike {
   id?: number;
   sourceId: string;
   title: string;
+  filename?: string | null;
   category: PolicyCategory;
   content: string;
   version: string;
@@ -15,7 +16,9 @@ export interface PolicyDocumentLike {
 export interface PolicyCitation {
   id: string;
   sourceId: string;
+  policyId?: string;
   title: string;
+  filename?: string | null;
   section: string;
   quote: string;
   version: string;
@@ -100,73 +103,100 @@ Calendar follow-ups require a persisted approved action. Events contain no atten
   },
 ];
 
-const STOP_WORDS = new Set(['about', 'after', 'school', 'should', 'their', 'there', 'these', 'those', 'what', 'when', 'where', 'which', 'with']);
+const STOP_WORDS = new Set(['about', 'after', 'school', 'should', 'their', 'there', 'these', 'those', 'what', 'when', 'where', 'which', 'with', 'policy', 'policies', 'section', 'rule', 'rules', 'does', 'have', 'from', 'under', 'current', 'student', 'students', 'please', 'explain', 'tell']);
 
 function tokens(value: string) {
-  return value.toLowerCase().match(/[a-z0-9]+/g)?.filter((token) => token.length > 3 && !STOP_WORDS.has(token)) ?? [];
+  return [...new Set(value.toLowerCase().match(/[a-z0-9]+/g)?.filter((token) => (token.length > 3 || /^\d+$/.test(token)) && !STOP_WORDS.has(token)) ?? [])];
 }
 
 function sections(document: PolicyDocumentLike) {
-  const blocks = document.content.split(/^##\s+/m).slice(1);
-  return blocks.map((block, index) => {
-    const [heading = `Section ${index + 1}`, ...body] = block.trim().split('\n');
-    return { heading: heading.trim(), body: body.join(' ').replace(/\s+/g, ' ').trim() };
-  }).filter((section) => section.body);
+  const result: { heading: string; body: string; policyId?: string }[] = [];
+  let heading: string | undefined;
+  let body: string[] = [];
+  const flush = () => {
+    if (!heading) return;
+    const text = body.join(' ').replace(/\s+/g, ' ').trim();
+    if (text) result.push({
+      heading,
+      body: text,
+      policyId: text.match(/\bPolicy\s*ID\s*:\s*([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/i)?.[1],
+    });
+  };
+  for (const line of document.content.split(/\r?\n/)) {
+    const markdown = line.match(/^#{2,6}\s+(.+?)\s*$/);
+    const numbered = line.match(/^((?:Section\s+)?\d+(?:\.\d+)*\.\s+.+?)\s*$/i);
+    if (markdown || numbered) {
+      flush();
+      heading = (markdown?.[1] ?? numbered?.[1])!.trim();
+      body = [];
+    } else if (heading) {
+      body.push(line);
+    }
+  }
+  flush();
+  return result;
 }
+
+function citationFor(document: PolicyDocumentLike, section: ReturnType<typeof sections>[number]): PolicyCitation {
+  return {
+    id: `${document.sourceId}:${section.heading}`,
+    sourceId: document.sourceId,
+    policyId: section.policyId,
+    title: document.title,
+    filename: document.filename,
+    section: section.heading,
+    quote: section.body,
+    version: document.version,
+    sourceKind: document.sourceKind,
+  };
+}
+
+const CATEGORY_TERMS: Record<PolicyCategory, string[]> = {
+  handbook: ['handbook', 'approval', 'recommendation', 'source', 'principles'],
+  attendance: ['attendance', 'absent', 'absence', 'absences', 'engagement'],
+  enrollment: ['enrollment', 'document', 'documents', 'records', 'immunization', 'tdap'],
+  tuition: ['tuition', 'payment', 'account', 'financial'],
+  procedure: ['procedure', 'workflow', 'follow-up', 'calendar', 'communications'],
+};
 
 export function citationsForCategory(
   category: PolicyCategory,
   documents: PolicyDocumentLike[],
   preferredTerms: string[] = [],
 ): PolicyCitation[] {
-  const document = documents.find((item) => item.status === 'active' && item.category === category);
-  if (!document) return [];
-  const candidates = sections(document);
-  const section = candidates
-    .map((item) => ({
-      item,
-      score: preferredTerms.reduce((score, term) => score + (item.heading.toLowerCase().includes(term) || item.body.toLowerCase().includes(term) ? 1 : 0), 0),
+  const ranked = documents.filter((document) => document.status === 'active')
+    .flatMap((document) => sections(document).map((section) => {
+      const heading = section.heading.toLowerCase();
+      const body = section.body.toLowerCase();
+      const sectionMatch = CATEGORY_TERMS[category].some((term) => heading.includes(term) || body.includes(term));
+      return {
+        score: (sectionMatch ? 1 : 0)
+          + CATEGORY_TERMS[category].reduce((score, term) => score + (heading.includes(term) ? 4 : body.includes(term) ? 0.5 : 0), 0)
+          + (document.category === category ? 2 : 0)
+          + preferredTerms.reduce((score, term) => score + (heading.includes(term) ? 3 : body.includes(term) ? 2 : 0), 0),
+        citation: citationFor(document, section),
+        eligible: sectionMatch || document.category === category,
+      };
     }))
-    .sort((a, b) => b.score - a.score)[0]?.item;
-  if (!section) return [];
-  return [{
-    id: `${document.sourceId}:${section.heading}`,
-    sourceId: document.sourceId,
-    title: document.title,
-    section: section.heading,
-    quote: section.body,
-    version: document.version,
-    sourceKind: document.sourceKind,
-  }];
+    .filter((item) => item.eligible)
+    .sort((a, b) => b.score - a.score);
+  return ranked[0] ? [ranked[0].citation] : [];
 }
 
 export function searchPolicySections(question: string, documents: PolicyDocumentLike[], limit = 3): PolicyCitation[] {
   const questionTokens = tokens(question);
-  const categoryAliases: Record<PolicyCategory, string[]> = {
-    handbook: ['handbook', 'approval', 'recommendation', 'source'],
-    attendance: ['attendance', 'absent', 'absence', 'risk'],
-    enrollment: ['enrollment', 'document', 'immunization', 'tdap', 'physical', 'requirement'],
-    tuition: ['tuition', 'payment', 'past', 'account', 'financial'],
-    procedure: ['procedure', 'workflow', 'calendar', 'gmail', 'follow'],
-  };
-
+  if (!questionTokens.length) return [];
   return documents
     .filter((document) => document.status === 'active')
     .flatMap((document) => sections(document).map((section) => {
-      const haystack = `${document.title} ${document.category} ${section.heading} ${section.body}`.toLowerCase();
-      const directScore = questionTokens.reduce((score, token) => score + (haystack.includes(token) ? 2 : 0), 0);
-      const aliasScore = categoryAliases[document.category].reduce((score, token) => score + (question.toLowerCase().includes(token) ? 1 : 0), 0);
+      const heading = section.heading.toLowerCase();
+      const body = section.body.toLowerCase();
+      const matches = questionTokens.filter((token) => heading.includes(token) || body.includes(token));
+      const score = matches.reduce((total, token) => total + (heading.includes(token) ? 4 : 0) + (body.includes(token) ? 1 : 0) + (/^\d+$/.test(token) && body.includes(token) ? 4 : 0), 0)
+        + (matches.length > 1 ? matches.length * 2 : 0);
       return {
-        score: directScore + aliasScore,
-        citation: {
-          id: `${document.sourceId}:${section.heading}`,
-          sourceId: document.sourceId,
-          title: document.title,
-          section: section.heading,
-          quote: section.body,
-          version: document.version,
-          sourceKind: document.sourceKind,
-        } satisfies PolicyCitation,
+        score,
+        citation: citationFor(document, section),
       };
     }))
     .filter((item) => item.score > 0)
