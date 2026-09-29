@@ -1,45 +1,19 @@
-# [Project name]
+# SchoolOps AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+School operations prototype with an authenticated, school-scoped workspace and a separate public, browser-local synthetic walkthrough. See [README.md](README.md) for the product, architecture, integration limits, setup, and reviewer flow.
 
-## Run & Operate
+## Run and check
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Replit managed workflows: `artifacts/api-server: API Server` and `artifacts/schoolops-ai: web`. The web artifact is mounted at `/`; the API is mounted at `/api`.
+- `pnpm run typecheck` — all packages.
+- `pnpm --filter @workspace/schoolops-ai run test` — agent regression tests.
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate client and schema after OpenAPI edits.
+- `pnpm --filter @workspace/db run push` — development database only; review schema impact first.
+- Use workspace secrets/managed credentials. Never put actual credentials in `.env.example` or source control.
 
-## Stack
+## Boundaries
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
-
-## Where things live
-
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- `/demo` uses synthetic browser-local state only. It never accesses school tenant records or sends email/calendar events.
+- Smartcare is a synthetic demo mapping, not a live API integration.
+- Shared Gmail/Calendar connectors are limited to the designated synthetic test school until per-school authorization exists.
+- `artifacts/mockup-sandbox/` is a design preview workspace, not a deployed product feature.

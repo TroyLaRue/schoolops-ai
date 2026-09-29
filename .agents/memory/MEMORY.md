@@ -3,3 +3,4 @@
 - [Policy retrieval across categories](policy-retrieval.md) — uploaded document categories are hints, not boundaries; ground citations in matched sections and their actual embedded IDs.
 - [Shared demo connector scope](shared-demo-connector-scope.md) — one workspace connector is not a school-owned integration; keep it isolated until per-school authorization exists.
 - [School isolation validation](school-isolation-validation.md) — the user confirmed separate school data works; keep portfolio demos outside authenticated tenant records.
+- [Runtime module churn](runtime-module-churn.md) — one-off Python commands may update Replit's tracked runtime config; prefer existing Node tooling for repository audits.

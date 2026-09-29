@@ -47,3 +47,28 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local configuration and credentials (example template is intentionally tracked)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+service-account*.json
+
+# Local runtime data, test output, and logs
+*.sqlite
+*.sqlite3
+*.db
+*.log
+test-results/
+playwright-report/
