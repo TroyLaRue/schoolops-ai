@@ -2,3 +2,4 @@
 - [Calendar side-effect safety](calendar-side-effect-safety.md) — use persisted approved actions as event source; keep approval and external creation separate.
 - [Policy retrieval across categories](policy-retrieval.md) — uploaded document categories are hints, not boundaries; ground citations in matched sections and their actual embedded IDs.
 - [Shared demo connector scope](shared-demo-connector-scope.md) — one workspace connector is not a school-owned integration; keep it isolated until per-school authorization exists.
+- [School isolation validation](school-isolation-validation.md) — the user confirmed separate school data works; keep portfolio demos outside authenticated tenant records.
