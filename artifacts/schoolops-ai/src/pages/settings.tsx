@@ -45,7 +45,7 @@ export default function Settings() {
     catch (err) { setError(err instanceof Error ? err.message : 'Could not change role.'); }
   }
 
-  return <div className="flex min-h-[100dvh] bg-background"><Sidebar /><div className="min-w-0 flex-1 pb-24 md:pl-64 md:pb-0">
+  return <div className="flex min-h-[100dvh] flex-col bg-background md:flex-row"><Sidebar /><div className="min-w-0 flex-1 pb-24 md:pl-64 md:pb-0">
     <header className="sticky top-0 z-20 flex min-h-16 items-center border-b bg-card px-5 md:px-8"><div><h1 className="text-lg font-semibold tracking-tight">School settings</h1><p className="text-xs text-muted-foreground">{school?.name}</p></div></header>
     <main className="mx-auto max-w-5xl space-y-8 px-5 py-8 md:px-8 md:py-12">
       <div><p className="text-xs font-semibold uppercase tracking-[.17em] text-primary">Workspace administration</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">The people and place behind the work.</h2><p className="mt-2 text-sm text-muted-foreground">Manage this school's identity and access. Changes stay within this workspace.</p></div>

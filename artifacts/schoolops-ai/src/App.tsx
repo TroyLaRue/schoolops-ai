@@ -43,9 +43,9 @@ const clerkAppearance = {
   options: { logoPlacement: 'inside' as const, logoLinkUrl: basePath || '/', logoImageUrl: `${window.location.origin}${basePath}/logo.svg` },
   variables: { colorPrimary: '#173766', colorForeground: '#14243b', colorMutedForeground: '#62738a', colorDanger: '#c93951', colorBackground: '#ffffff', colorInput: '#f6f8fb', colorInputForeground: '#14243b', colorNeutral: '#d7e0eb', fontFamily: 'Inter, sans-serif', borderRadius: '6px' },
   elements: {
-    rootBox: 'w-full flex justify-center', cardBox: 'bg-white rounded-xl w-[440px] max-w-full overflow-hidden border border-slate-200 shadow-sm', card: '!shadow-none !border-0 !bg-transparent !rounded-none', footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    rootBox: 'w-full min-w-0 max-w-full flex justify-center', cardBox: 'bg-white rounded-xl w-[440px] max-w-full min-w-0 overflow-hidden border border-slate-200 shadow-sm', card: '!px-3 sm:!px-5 !shadow-none !border-0 !bg-transparent !rounded-none', footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
     headerTitle: 'text-slate-900 font-semibold', headerSubtitle: 'text-slate-600', socialButtonsBlockButtonText: 'text-slate-900', formFieldLabel: 'text-slate-900', footerActionLink: 'text-blue-900', footerActionText: 'text-slate-600', dividerText: 'text-slate-600', identityPreviewEditButton: 'text-blue-900', formFieldSuccessText: 'text-blue-900', alertText: 'text-slate-900',
-    logoBox: 'mb-2', logoImage: 'h-10 w-10', socialButtonsBlockButton: 'border-slate-200', formButtonPrimary: 'bg-[#173766] text-white', formFieldInput: 'bg-[#f6f8fb] text-slate-900', footerAction: 'border-slate-200', dividerLine: 'bg-slate-200', alert: 'bg-[#f6f8fb]', otpCodeFieldInput: 'bg-[#f6f8fb]', formFieldRow: 'gap-2', main: 'p-7',
+    logoBox: 'mb-2', logoImage: 'h-10 w-10', socialButtonsBlockButton: 'border-slate-200', formButtonPrimary: 'bg-[#173766] text-white', formFieldInput: 'bg-[#f6f8fb] text-slate-900', footerAction: 'border-slate-200', dividerLine: 'bg-slate-200', alert: 'bg-[#f6f8fb]', otpCodeFieldInput: 'bg-[#f6f8fb]', formFieldRow: 'gap-2', main: 'p-4 sm:p-7',
   },
 };
 

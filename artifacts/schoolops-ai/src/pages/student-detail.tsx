@@ -227,16 +227,16 @@ export default function StudentDetail() {
   };
 
   if (!currentSchool || operationsQuery.isLoading) {
-    return <div className="min-h-screen bg-background flex"><Sidebar /><main className="flex-1 p-8 md:ml-64">Loading active-school student record…</main></div>;
+    return <div className="flex min-h-screen flex-col bg-background md:flex-row"><Sidebar /><main className="flex-1 p-8 md:ml-64">Loading active-school student record…</main></div>;
   }
   if (operationsQuery.isError) {
-    return <div className="min-h-screen bg-background flex"><Sidebar /><main className="flex-1 p-8 md:ml-64"><Card className="mx-auto max-w-lg p-8 text-center"><h2 className="text-lg font-semibold">Student data unavailable</h2><p className="my-3 text-sm text-muted-foreground">Could not load records for {currentSchool.school.name}. No other-school data is shown.</p><Button variant="outline" onClick={() => operationsQuery.refetch()}>Retry</Button></Card></main></div>;
+    return <div className="flex min-h-screen flex-col bg-background md:flex-row"><Sidebar /><main className="flex-1 p-8 md:ml-64"><Card className="mx-auto max-w-lg p-8 text-center"><h2 className="text-lg font-semibold">Student data unavailable</h2><p className="my-3 text-sm text-muted-foreground">Could not load records for {currentSchool.school.name}. No other-school data is shown.</p><Button variant="outline" onClick={() => operationsQuery.refetch()}>Retry</Button></Card></main></div>;
   }
   if (!student) {
     return (
-      <div className="min-h-screen bg-background flex">
+      <div className="flex min-h-screen flex-col bg-background md:flex-row">
         <Sidebar />
-        <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex flex-col min-w-0">
           <header className="min-h-16 border-b bg-card flex items-center px-4 py-2 sm:px-6 sticky top-0 z-20">
              <Link href="/students" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Directory</Link>
              <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground" />
@@ -266,13 +266,13 @@ export default function StudentDetail() {
   const isHealthy = flags.length === 0;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
-        <header className="min-h-16 border-b bg-card flex items-center px-4 py-2 sm:px-6 sticky top-0 z-20">
+      <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <header className="min-h-16 min-w-0 border-b bg-card flex items-center px-4 py-2 sm:px-6 sticky top-0 z-20">
            <Link href="/students" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Directory</Link>
-           <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground/50" />
-           <span className="text-sm font-medium text-foreground">{student.name}</span>
+           <ChevronRight className="h-4 w-4 mx-2 shrink-0 text-muted-foreground/50" />
+           <span className="min-w-0 truncate text-sm font-medium text-foreground">{student.name}</span>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-y-auto">
@@ -288,10 +288,10 @@ export default function StudentDetail() {
             <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">{student.name}</h1>
-                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                  <span>{student.id}</span>
+                <div className="text-sm text-muted-foreground mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="break-all">{student.id}</span>
                   <span>&bull;</span>
-                  <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">{sourceLabel}</Badge>
+                  <Badge variant="secondary" className="max-w-full truncate text-[10px] bg-primary/10 text-primary border-primary/20">{sourceLabel}</Badge>
                 </div>
               </div>
             </div>

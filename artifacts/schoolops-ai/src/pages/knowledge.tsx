@@ -199,12 +199,12 @@ export default function Knowledge() {
   }, [documents, search, filterCategory]);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
-        <header className="min-h-16 border-b bg-card flex items-center justify-between px-4 py-2 sm:px-6 sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
+      <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex flex-col min-w-0">
+        <header className="min-h-16 border-b bg-card flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6 sticky top-0 z-20">
+          <div className="flex min-w-0 items-center gap-2">
+            <BookOpen className="h-5 w-5 shrink-0 text-primary" />
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Knowledge Base</h1>
           </div>
           <Button onClick={handleOpenAdd} size="sm" className="gap-2 shadow-sm">
@@ -335,7 +335,7 @@ export default function Knowledge() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingDoc ? 'Edit Document' : 'Add Policy Document'}</DialogTitle>
           </DialogHeader>
@@ -359,7 +359,7 @@ export default function Knowledge() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="title">Document Title</Label>
                 <Input 
@@ -386,7 +386,7 @@ export default function Knowledge() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="version">Version</Label>
                 <Input 

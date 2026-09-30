@@ -33,13 +33,13 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
     )}>
       <CardHeader className="bg-muted/30 pb-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Icon className={cn("h-5 w-5", config.color)} />
-            <Badge variant="outline" className="uppercase tracking-wider text-[10px] bg-background">
+           <div className="flex min-w-0 items-center gap-2">
+             <Icon className={cn("h-5 w-5 shrink-0", config.color)} />
+             <Badge variant="outline" className="min-w-0 max-w-full truncate uppercase tracking-wider text-[10px] bg-background">
               {issue.category}
             </Badge>
           </div>
-          <Badge variant={config.badge} className="capitalize shadow-sm">
+           <Badge variant={config.badge} className="shrink-0 capitalize shadow-sm">
             {issue.severity}
           </Badge>
         </div>
@@ -54,7 +54,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
             <div className="bg-accent/50 p-1.5 rounded-sm mt-0.5">
               <Activity className="h-4 w-4 text-primary" />
             </div>
-            <div>
+             <div className="min-w-0 break-words">
               <span className="font-semibold text-foreground block mb-1">Evidence</span>
               <p className="text-muted-foreground leading-relaxed">{issue.evidence}</p>
             </div>
@@ -64,7 +64,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
             <div className="bg-accent/50 p-1.5 rounded-sm mt-0.5">
               <AlertTriangle className="h-4 w-4 text-primary" />
             </div>
-            <div>
+             <div className="min-w-0 break-words">
               <span className="font-semibold text-foreground block mb-1">Business Impact</span>
               <p className="text-muted-foreground leading-relaxed">{issue.impact}</p>
             </div>
@@ -77,7 +77,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
               </div>
               <div>
                 <span className="font-semibold text-foreground block mb-1">Policy Basis</span>
-                <p className="text-muted-foreground leading-relaxed">{issue.policyBasis}</p>
+                 <p className="break-words text-muted-foreground leading-relaxed">{issue.policyBasis}</p>
               </div>
             </div>
           )}
@@ -94,7 +94,7 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
                       <MessageSquare className="h-4 w-4 text-primary shrink-0" /> : 
                       <ListTodo className="h-4 w-4 text-primary shrink-0" />
                     }
-                    <div>
+                     <div className="min-w-0 break-words">
                       <p className="font-medium text-foreground">{action.title}</p>
                       <p className="text-xs text-muted-foreground">{action.description}</p>
                     </div>
@@ -117,10 +117,10 @@ export function IssueCard({ issue, onActionApprove, onActionDismiss, actionsEnab
                                 Review {action.type === 'communication' ? 'Draft' : 'Task'}
                               </DialogTitle>
                             </DialogHeader>
-                            <div className="p-4 bg-muted/50 rounded-md mt-4 border font-mono text-sm text-foreground whitespace-pre-wrap">
+                             <div className="mt-4 break-words rounded-md border bg-muted/50 p-4 font-mono text-sm text-foreground whitespace-pre-wrap">
                               {action.content}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 mt-6 sm:flex sm:justify-end">
+                             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
                               <DialogClose asChild>
                                 <Button variant="outline">Cancel</Button>
                               </DialogClose>

@@ -199,12 +199,12 @@ export default function Dashboard() {
   const attentionIssues = issues.filter((issue) => issue.severity === 'attention');
   const hasRunBefore = (history.data?.runs.length ?? 0) > 0;
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+      <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex flex-col min-w-0">
         <TopHeader onRunAudit={handleRunAudit} isRunning={isRunning || createRun.isPending} />
         <main className="flex-1 p-4 md:p-8 overflow-y-auto relative">
-          <div className="max-w-[1400px] mx-auto space-y-6">
+          <div className="mx-auto min-w-0 max-w-[1400px] space-y-6">
             {persistenceError && <div className="rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">{persistenceError}</div>}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b">
               <div>
@@ -218,14 +218,14 @@ export default function Dashboard() {
             {operations.isError ? <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-destructive">Active-school operations could not be loaded. No other-school findings are shown. <Button variant="outline" className="ml-3" onClick={() => operations.refetch()}>Retry</Button></div> : null}
             {history.isError && <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">This school’s activity history could not be loaded. New findings remain visible, but history-based approvals are unavailable until history can be refreshed. <Button variant="outline" className="ml-3" onClick={() => history.refetch()}>Retry history</Button></div>}
             {sourceData && (
-              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6 xl:gap-8 xl:items-start">
-                <div className="space-y-6">
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start xl:gap-8">
+                <div className="min-w-0 space-y-6">
                   <Tabs defaultValue="all" className="w-full min-w-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <TabsList className="grid h-auto w-full grid-cols-3 bg-muted/50 p-1 sm:inline-flex sm:w-auto">
-                        <TabsTrigger value="all" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm">All Items <Badge variant="secondary" className="ml-2 bg-background">{issues.length}</Badge></TabsTrigger>
-                        <TabsTrigger value="critical" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm">Critical <Badge variant="destructive" className="ml-2">{criticalIssues.length}</Badge></TabsTrigger>
-                        <TabsTrigger value="attention" className="min-h-10 px-2 text-[11px] sm:px-3 sm:text-sm">Attention <Badge variant="warning" className="ml-2">{attentionIssues.length}</Badge></TabsTrigger>
+                    <div className="mb-4 min-w-0">
+                      <TabsList className="grid h-auto w-full grid-cols-[repeat(3,minmax(0,1fr))] bg-muted/50 p-1 sm:inline-flex sm:w-auto">
+                        <TabsTrigger value="all" className="min-h-11 min-w-0 flex-col gap-0.5 px-1 text-[11px] sm:flex-row sm:px-3 sm:text-sm">All Items <Badge variant="secondary" className="bg-background sm:ml-2">{issues.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="critical" className="min-h-11 min-w-0 flex-col gap-0.5 px-1 text-[11px] sm:flex-row sm:px-3 sm:text-sm">Critical <Badge variant="destructive" className="sm:ml-2">{criticalIssues.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="attention" className="min-h-11 min-w-0 flex-col gap-0.5 px-1 text-[11px] sm:flex-row sm:px-3 sm:text-sm">Attention <Badge variant="warning" className="sm:ml-2">{attentionIssues.length}</Badge></TabsTrigger>
                       </TabsList>
                     </div>
                     <TabsContent value="all" className="space-y-4 m-0">{issues.map((issue) => <IssueCard key={issue.id} issue={issue} actionsEnabled={canApprove && hasRunBefore && !isRunning} onActionApprove={(_, actionId) => persistActionStatus(actionId, 'approved')} onActionDismiss={(_, actionId) => persistActionStatus(actionId, 'dismissed')} />)}</TabsContent>

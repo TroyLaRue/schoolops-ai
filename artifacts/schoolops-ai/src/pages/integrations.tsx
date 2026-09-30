@@ -135,7 +135,7 @@ export default function Integrations() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="flex min-h-screen min-w-0 flex-col pb-20 md:ml-64 md:pb-0">
+      <div className="flex min-h-screen min-w-0 flex-col pb-24 md:ml-64 md:pb-0">
         <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-4 border-b bg-card/95 px-4 py-3 backdrop-blur sm:px-6">
           <div className="min-w-0">
             <p className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-primary">SchoolOps control plane</p>
@@ -405,8 +405,8 @@ export default function Integrations() {
               </div>
             </section>
 
-            <section className="grid gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7 lg:grid-cols-[0.9fr_1.1fr]">
-              <div>
+            <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-7 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 text-primary">
                   <Braces className="h-5 w-5" />
                   <span className="font-mono text-[10px] font-medium uppercase tracking-[0.2em]">The SchoolOps data layer</span>
@@ -432,7 +432,7 @@ export default function Integrations() {
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-muted/20 p-4 sm:p-5">
+              <div className="min-w-0 rounded-xl border bg-muted/20 p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3 border-b pb-4">
                   <div>
                     <p className="text-sm font-semibold">Sample mapping</p>
@@ -440,7 +440,7 @@ export default function Integrations() {
                   </div>
                   <Badge variant="outline" className="font-mono text-[10px]">SCHEMA V1</Badge>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="max-w-full overflow-x-auto" role="region" aria-label="Sample source field mapping" tabIndex={0}>
                   <table className="w-full min-w-[420px] border-collapse text-left text-xs">
                     <thead>
                       <tr className="border-b text-muted-foreground">

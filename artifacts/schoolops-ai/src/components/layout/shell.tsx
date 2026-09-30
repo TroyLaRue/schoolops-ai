@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useClerk, useUser } from '@clerk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, MessageSquare, Settings, History, Link2, BookOpen, LogOut, ChevronDown, PlayCircle } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings, History, Link2, BookOpen, LogOut, ChevronDown, PlayCircle, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSchoolSession } from '@/lib/school-session';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -17,13 +18,16 @@ export function Sidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
     { icon: Users, label: 'Students', href: '/students' },
-    { icon: MessageSquare, label: 'Communications', href: '/communications' },
+     { icon: MessageSquare, label: 'Communications', mobileLabel: 'Messages', href: '/communications' },
     { icon: BookOpen, label: 'Knowledge', href: '/knowledge' },
-    { icon: Link2, label: 'Integrations', href: '/integrations' },
+     { icon: Link2, label: 'Integrations', mobileLabel: 'Sources', href: '/integrations' },
     { icon: History, label: 'Activity History', mobileLabel: 'History', href: '/history' },
     { icon: PlayCircle, label: 'Demo Mode', mobileLabel: 'Demo', href: '/demo' },
     ...(isAdmin ? [{ icon: Settings, label: 'Settings', href: '/settings' }] : []),
   ];
+  const mobileMainItems = navItems.filter(item => ['/', '/students', '/communications', '/integrations'].includes(item.href));
+  const mobileMoreItems = navItems.filter(item => !mobileMainItems.includes(item));
+  const moreIsActive = mobileMoreItems.some(item => location === item.href);
   async function handleSwitch(id: number) {
     setSwitchError('');
     try { await switchSchool(id); }
@@ -41,7 +45,15 @@ export function Sidebar() {
       <div className="border-t p-4"><div className="min-w-0 px-2"><div className="truncate text-sm font-medium" title={name}>{name}</div><div className="truncate text-xs capitalize text-muted-foreground">{currentSchool?.membership.role} · {user?.primaryEmailAddress?.emailAddress || session?.userId}</div></div><button type="button" onClick={() => void handleSignOut()} className="mt-3 flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"><LogOut className="h-4 w-4" /> Sign out</button></div>
     </aside>
     <div className="relative z-30 flex min-h-14 items-center justify-between gap-3 border-b bg-card px-4 md:hidden"><div className="min-w-0"><div className="truncate text-sm font-semibold">{currentSchool?.school.name}</div><div className="truncate text-[11px] text-muted-foreground">{name} · <span className="capitalize">{currentSchool?.membership.role}</span></div></div><div className="flex shrink-0 items-center gap-2">{session && session.memberships.length > 1 && <select aria-label="Switch school" disabled={isSwitching} value={currentSchool?.school.id} onChange={e=>void handleSwitch(Number(e.target.value))} className="max-w-28 rounded border bg-background px-1 py-2 text-xs">{session.memberships.map(m=><option key={m.school.id} value={m.school.id}>{m.school.name}</option>)}</select>}<button type="button" aria-label="Sign out" title="Sign out" onClick={() => void handleSignOut()} className="rounded-md p-2 text-muted-foreground hover:bg-accent"><LogOut className="h-4 w-4" /></button></div></div>
-    <nav aria-label="Main navigation" className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t bg-card/95 px-1 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,.08)] backdrop-blur-md md:hidden snap-x [&::-webkit-scrollbar]:hidden">{navItems.map(item=><Link key={item.href} href={item.href} className={cn('flex min-h-14 min-w-[72px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium', location === item.href ? 'bg-primary/10 text-primary' : 'text-muted-foreground active:bg-accent')}><item.icon className="h-5 w-5" /><span>{item.mobileLabel ?? item.label}</span></Link>)}</nav>
+     <nav aria-label="Main navigation" className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card/95 px-1 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,.08)] backdrop-blur-md md:hidden">
+       {mobileMainItems.map(item=><Link key={item.href} href={item.href} aria-label={item.label} aria-current={location === item.href ? 'page' : undefined} className={cn('flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 text-[10px] font-medium', location === item.href ? 'bg-primary/10 text-primary' : 'text-muted-foreground active:bg-accent')}><item.icon className="h-5 w-5" /><span className="max-w-full truncate">{item.mobileLabel ?? item.label}</span></Link>)}
+       <DropdownMenu>
+         <DropdownMenuTrigger asChild><button type="button" aria-label="More pages" className={cn('flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 text-[10px] font-medium', moreIsActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground active:bg-accent')}><Menu className="h-5 w-5" /><span>More</span></button></DropdownMenuTrigger>
+         <DropdownMenuContent side="top" align="end" sideOffset={8} className="w-52">
+           {mobileMoreItems.map(item=><DropdownMenuItem key={item.href} asChild><Link href={item.href} aria-current={location === item.href ? 'page' : undefined} className="flex min-h-11 items-center gap-3"><item.icon className="h-4 w-4" />{item.label}</Link></DropdownMenuItem>)}
+         </DropdownMenuContent>
+       </DropdownMenu>
+     </nav>
   </>;
 }
 

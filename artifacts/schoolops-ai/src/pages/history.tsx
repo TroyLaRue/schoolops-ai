@@ -182,15 +182,15 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex min-w-0 flex-col">
+      <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex min-w-0 flex-col">
         <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b bg-card px-4 py-2 sm:px-6">
           <div className="min-w-0">
             <h1 className="text-lg font-semibold tracking-tight sm:text-xl">Activity History</h1>
             <p className="hidden text-xs text-muted-foreground sm:block">Persistent record of agent runs, findings, approvals, and completed actions.</p>
           </div>
-          <Badge variant="secondary" className="shrink-0 gap-1.5 bg-primary/10 text-primary"><Clock3 className="h-3.5 w-3.5" /> Persistent log</Badge>
+           <Badge variant="secondary" className="hidden shrink-0 gap-1.5 bg-primary/10 text-primary sm:inline-flex"><Clock3 className="h-3.5 w-3.5" /> Persistent log</Badge>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="mx-auto max-w-6xl space-y-6">

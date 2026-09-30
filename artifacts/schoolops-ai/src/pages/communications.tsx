@@ -130,13 +130,13 @@ export default function Communications() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen flex-col bg-background md:flex-row">
       <Sidebar />
-      <div className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col min-w-0">
+      <div className="flex-1 pb-24 md:pb-0 md:pl-64 flex flex-col min-w-0">
         <header className="min-h-16 border-b bg-card flex items-center justify-between gap-3 px-4 py-2 sm:px-6 sticky top-0 z-20">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight leading-tight">Communications Review</h1>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{operations.data?.source.label ?? 'Active-school communications'}</Badge>
+            <Badge variant="secondary" className="max-w-full truncate bg-primary/10 text-primary border-primary/20">{operations.data?.source.label ?? 'Active-school communications'}</Badge>
           </div>
         </header>
 
